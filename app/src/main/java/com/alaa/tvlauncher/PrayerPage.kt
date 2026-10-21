@@ -3,6 +3,7 @@ package com.alaa.tvlauncher
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.focus.*
@@ -17,24 +18,39 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 
 @Composable
-internal fun PrayerPage(today: PrayerDay?,tomorrow: PrayerDay?,now: ZonedDateTime,onBack:()->Unit) {
+internal fun PrayerPage(today: PrayerDay?,tomorrow: PrayerDay?,now: ZonedDateTime,onApps:()->Unit,onSettings:()->Unit,onBack:()->Unit) {
     val back=remember { FocusRequester() }
     LaunchedEffect(Unit) { back.requestFocus() }
     BackHandler(onBack=onBack)
     Box(Modifier.fillMaxSize().testTag("prayer-page")) {
         Image(painterResource(R.drawable.prayer_wallpaper),null,Modifier.fillMaxSize(),contentScale=ContentScale.Crop)
-        Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0x35030C16),Color(0x60030C16)))))
-        Column(Modifier.fillMaxSize().padding(horizontal=48.dp,vertical=28.dp),verticalArrangement=Arrangement.spacedBy(22.dp)) {
-            Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically) {
-                WebTile(Modifier.width(100.dp).height(40.dp).focusRequester(back).testTag("prayer-back"),click=onBack) {
-                    Text("رجوع",Modifier.align(Alignment.Center),color=Color.White)
-                }
-                Column(horizontalAlignment=Alignment.End) {
-                    Text(now.format(DateTimeFormatter.ofPattern("HH:mm")),color=Color.White,fontSize=54.sp,fontWeight=FontWeight.Bold)
-                    Text("مسجد الرحمة · مولهايم",color=Color.White,fontSize=18.sp)
-                }
+        Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0x15091932),Color(0x25091932)))))
+        Row(Modifier.fillMaxSize()) {
+            Column(Modifier.width(88.dp).fillMaxHeight().background(Color(0xBF0D1E42)).padding(horizontal=12.dp,vertical=24.dp),
+                horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.spacedBy(18.dp)) {
+                Text("◇",color=Color.White,fontSize=33.sp)
+                PrayerRailItem("⌂","الرئيسية","prayer-back",back,onBack,true)
+                PrayerRailItem("▦","كل التطبيقات","prayer-apps",click=onApps)
+                PrayerRailItem("☾","الصلاة","prayer-mosques",click={back.requestFocus()})
+                PrayerRailItem("⚙","الإعدادات","prayer-settings",click=onSettings)
             }
-            PrayerCalendarPanel(today,tomorrow,now)
+            Column(Modifier.weight(1f).fillMaxHeight().padding(start=28.dp,end=32.dp,top=24.dp,bottom=26.dp),verticalArrangement=Arrangement.spacedBy(18.dp)) {
+                Column(Modifier.fillMaxWidth(),horizontalAlignment=Alignment.End) {
+                    Text(prayer12(now.toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm"))),color=Color.White,fontSize=48.sp,fontWeight=FontWeight.Bold)
+                    Text(now.format(DateTimeFormatter.ofPattern("EEEE، d MMMM yyyy",java.util.Locale.forLanguageTag("ar"))),color=Color.White,fontSize=15.sp)
+                }
+                PrayerCalendarPanel(today,tomorrow,now)
+            }
+        }
+    }
+}
+@Composable
+private fun PrayerRailItem(icon:String,label:String,tag:String,focus:FocusRequester?=null,click:()->Unit,active:Boolean=false) {
+    WebTile(Modifier.width(64.dp).height(66.dp).then(if(focus!=null) Modifier.focusRequester(focus) else Modifier).testTag(tag),
+        color=if(active) Color(0xFFF1F4FF) else Color.Transparent,click=click) {
+        Column(Modifier.align(Alignment.Center),horizontalAlignment=Alignment.CenterHorizontally) {
+            Text(icon,color=if(active) Color(0xFF142543) else Color.White,fontSize=26.sp)
+            Text(label,color=if(active) Color(0xFF142543) else Color.White,fontSize=9.sp)
         }
     }
 }

@@ -68,7 +68,7 @@ fun WebOsHome(apps: List<InstalledApp>, today: PrayerDay?, tomorrow: PrayerDay?,
     val close=remember { FocusRequester() }
     LaunchedEffect(drawer) { delay(120); runCatching { if(drawer) close.requestFocus() else first.requestFocus() } }
     if(prayerPage) {
-        PrayerPage(today,tomorrow,now) { prayerPage=false }
+        PrayerPage(today,tomorrow,now,onApps={prayerPage=false;drawer=true},onSettings={prayerPage=false;settings()}) { prayerPage=false }
         return
     }
     BackHandler { if(drawer) drawer=false else notice=false }
