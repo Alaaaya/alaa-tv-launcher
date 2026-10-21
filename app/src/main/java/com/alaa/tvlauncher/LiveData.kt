@@ -1,0 +1,121 @@
+package com.alaa.tvlauncher
+
+import android.content.Context
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.json.JSONObject
+import org.json.JSONArray
+import java.net.URL
+import java.net.HttpURLConnection
+import java.time.*
+import java.time.format.DateTimeFormatter
+
+val berlin: ZoneId = ZoneId.of("Europe/Berlin")
+val prayerNames = listOf("الفجر", "الظهر", "العصر", "المغرب", "العشاء")
+data class PrayerDay(val date: LocalDate, val times: List<String>, val cached: Boolean)
+data class Weather(val temperature: Int, val code: Int, val updated: Long)
+data class Match(val home: String, val away: String, val league: String, val kickoff: String, val date: String)
+
+object PrayerParser {
+    // Balanced JSON extraction, including braces and escaped quotes inside strings.
+    fun extract(html: String): JSONObject {
+        val assignment = Regex("""(?:var\s+|let\s+|const\s+)?confData\s*=\s*""").find(html)
+            ?: error("No prayer configuration")
+        val start = html.indexOf('{', assignment.range.last + 1)
+        require(start >= 0)
+        var depth = 0; var quoted = false; var escaped = false
+        for (i in start until html.length) {
+            val c = html[i]
+            if (quoted) {
+                if (escaped) escaped = false else if (c == '\\') escaped = true else if (c == '"') quoted = false
+            } else {
+                if (c == '"') quoted = true
+                else if (c == '{') depth++
+                else if (c == '}' && --depth == 0) return JSONObject(html.substring(start, i + 1))
+            }
+        }
+        error("Incomplete prayer configuration")
+    }
+    fun day(config: JSONObject, date: LocalDate, fetchedDate: LocalDate, cached: Boolean): PrayerDay? {
+        val source = if (date == fetchedDate) config.optJSONArray("times") else null
+        val values = if (source != null && source.length() == 5)
+            List(5) { source.getString(it) }
+        else {
+            val calendar = config.optJSONArray("calendar") ?: return null
+            val row = calendar.optJSONObject(date.monthValue - 1)?.optJSONArray(date.dayOfMonth.toString()) ?: return null
+            // Mawaqit annual calendar includes sunrise at index 1.
+            if (row.length() < 6) return null
+            listOf(0, 2, 3, 4, 5).map { row.getString(it) }
+        }
+        if (values.any { !it.matches(Regex("""\d{2}:\d{2}""")) || runCatching { LocalTime.parse(it) }.isFailure }) return null
+        return PrayerDay(date, values, cached)
+    }
+    fun next(today: PrayerDay?, tomorrow: PrayerDay?, now: ZonedDateTime): Pair<Int, ZonedDateTime>? {
+        for (day in listOfNotNull(today, tomorrow))
+            day.times.forEachIndexed { index, value ->
+                val time = day.date.atTime(LocalTime.parse(value)).atZone(berlin)
+                if (time.isAfter(now)) return index to time
+            }
+        return null
+    }
+}
+class LiveRepository(context: Context) {
+    private val prefs = context.getSharedPreferences("live-data", Context.MODE_PRIVATE)
+    private fun get(url: String): String {
+        val c = URL(url).openConnection() as HttpURLConnection
+        c.connectTimeout = 12000; c.readTimeout = 12000
+        c.setRequestProperty("User-Agent", "AlaaTV/1.0 personal home launcher")
+        return try { require(c.responseCode in 200..299); c.inputStream.bufferedReader().use { it.readText() } }
+        finally { c.disconnect() }
+    }
+    fun cachedPrayers(): Pair<PrayerDay?, PrayerDay?> {
+        return runCatching {
+            val raw = prefs.getString("prayers", null) ?: return null to null
+            val date = LocalDate.parse(prefs.getString("prayer-date", ""))
+            val now = LocalDate.now(berlin)
+            // Annual calendar must not be silently reused in another year.
+            if (date.year != now.year) return null to null
+            val config = JSONObject(raw)
+            PrayerParser.day(config, now, date, true) to PrayerParser.day(config, now.plusDays(1), date, true)
+        }.getOrDefault(null to null)
+    }
+    suspend fun prayers(): Pair<PrayerDay?, PrayerDay?> = withContext(Dispatchers.IO) {
+        runCatching {
+            val config = PrayerParser.extract(get("https://mawaqit.net/de/arrahma-mulheim"))
+            val date = LocalDate.now(berlin)
+            val today = PrayerParser.day(config, date, date, false) ?: error("Invalid prayer times")
+            prefs.edit().putString("prayers", config.toString()).putString("prayer-date", date.toString()).apply()
+            today to PrayerParser.day(config, date.plusDays(1), date, false)
+        }.getOrElse { cachedPrayers() }
+    }
+    fun cachedWeather(): Weather? = runCatching {
+        val j = JSONObject(prefs.getString("weather", null) ?: return null)
+        Weather(j.getInt("temp"), j.getInt("code"), j.getLong("updated"))
+    }.getOrNull()
+    suspend fun weather(): Weather? = withContext(Dispatchers.IO) {
+        runCatching {
+            val j = JSONObject(get("https://api.open-meteo.com/v1/forecast?latitude=51.4353&longitude=6.8799&current=temperature_2m,weather_code&timezone=Europe%2FBerlin")).getJSONObject("current")
+            val w = Weather(kotlin.math.round(j.getDouble("temperature_2m")).toInt(), j.getInt("weather_code"), System.currentTimeMillis())
+            prefs.edit().putString("weather", JSONObject().put("temp", w.temperature).put("code", w.code).put("updated", w.updated).toString()).apply()
+            w
+        }.getOrElse { cachedWeather() }
+    }
+    suspend fun match(): Match? = withContext(Dispatchers.IO) {
+        runCatching {
+            val day = LocalDate.now(berlin)
+            val events = JSONObject(get("https://www.thesportsdb.com/api/v1/json/123/eventsday.php?d=$day&s=Soccer")).optJSONArray("events") ?: return@runCatching null
+            val items = (0 until events.length()).map { events.getJSONObject(it) }
+                .filter { it.optString("strSport") == "Soccer" && it.optString("dateEvent") == day.toString() }
+            val event = items.firstOrNull { it.optString("strLeague").contains("German") } ?: items.firstOrNull() ?: return@runCatching null
+            val kickoff = runCatching {
+                val time = LocalTime.parse(event.getString("strTime").take(8))
+                day.atTime(time).atZone(ZoneOffset.UTC).withZoneSameInstant(berlin).format(DateTimeFormatter.ofPattern("HH:mm"))
+            }.getOrDefault("—")
+            Match(event.getString("strHomeTeam"), event.getString("strAwayTeam"), event.optString("strLeague"), kickoff, day.toString())
+        }.getOrNull()
+    }
+}
+fun weatherLabel(code: Int): String = when(code) {
+    0 -> "سماء صافية"; 1, 2 -> "غائم جزئياً"; 3 -> "غائم"; 45, 48 -> "ضباب"
+    in 51..67, in 80..82 -> "أمطار"; in 71..77, 85, 86 -> "ثلوج"; in 95..99 -> "عواصف رعدية"; else -> "الطقس"
+}
