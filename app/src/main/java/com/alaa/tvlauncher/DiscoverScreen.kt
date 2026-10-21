@@ -22,6 +22,8 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import androidx.tv.material3.MaterialTheme
@@ -78,7 +80,7 @@ private fun ActionTile(modifier: Modifier = Modifier, light: Boolean = false,
     Surface(onClick = onClick, modifier = modifier,
         shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(14.dp)),
         colors = ClickableSurfaceDefaults.colors(
-            containerColor = if (light) Color(0xFFFDFDFE) else Color(0xFF25262D),
+            containerColor = if (light) Color(0xD9FDFDFE) else Color(0xA525262D),
             focusedContainerColor = if (light) Color.White else Color(0xFF3C3E49),
             contentColor = ink, focusedContentColor = ink),
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1.045f),
@@ -90,7 +92,7 @@ private fun ActionTile(modifier: Modifier = Modifier, light: Boolean = false,
 private fun DiscoverHome(apps: List<InstalledApp>, today: PrayerDay?, tomorrow: PrayerDay?,
                          weather: Weather?, now: ZonedDateTime, night: Boolean, settings: () -> Unit) {
     val context = LocalContext.current
-    val background by animateColorAsState(if(night) Color(0xFF15171E) else Color(0xFFF0F0F3), tween(1500), label="day-night")
+    val background by animateColorAsState(if(night) Color(0xC5101725) else Color(0xA8EDF0F3), tween(1500), label="day-night")
     val ink = if(night) Color(0xFFF5F5F7) else Color(0xFF202126)
     val dim = if(night) Color(0xFFB4B6C3) else Color(0xFF626570)
     var tab by remember { mutableIntStateOf(0) }
@@ -99,22 +101,25 @@ private fun DiscoverHome(apps: List<InstalledApp>, today: PrayerDay?, tomorrow: 
     val close = remember { FocusRequester() }
     LaunchedEffect(drawer, apps) { delay(150); runCatching { if(drawer) close.requestFocus() else first.requestFocus() } }
     BackHandler { if(drawer) drawer = false }
-    Column(Modifier.fillMaxSize().background(background).padding(horizontal=40.dp, vertical=24.dp), verticalArrangement=Arrangement.spacedBy(12.dp)) {
+    Box(Modifier.fillMaxSize()) {
+    Image(painterResource(R.drawable.hero),null,Modifier.fillMaxSize(),contentScale=ContentScale.Crop)
+    Box(Modifier.fillMaxSize().background(background))
+    Column(Modifier.fillMaxSize().padding(horizontal=75.dp, vertical=18.dp), verticalArrangement=Arrangement.spacedBy(12.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment=Alignment.CenterVertically) {
             Column {
-                Text(if(drawer) "Your apps" else "For You", color=ink, fontSize=36.sp, fontWeight=FontWeight.Bold, letterSpacing=(-1).sp)
-                Text("Alaa TV",color=dim,fontSize=11.sp,letterSpacing=1.sp)
+                Text(if(drawer) "Your apps" else "Alaa TV", color=ink, fontSize=24.sp, fontWeight=FontWeight.Medium, fontFamily=FontFamily(Font(R.font.inter_tight)))
+                Text(now.format(DateTimeFormatter.ofPattern("HH:mm")),color=ink,fontSize=18.sp,fontFamily=FontFamily(Font(R.font.inter_tight)))
             }
             Spacer(Modifier.weight(1f))
             Column(horizontalAlignment=Alignment.End) {
-                Text(now.format(DateTimeFormatter.ofPattern("HH:mm")),color=ink,fontSize=21.sp,fontWeight=FontWeight.Medium)
+                Text("For You",color=ink,fontSize=16.sp,fontWeight=FontWeight.Medium)
                 val stale = weather != null && now.toInstant().toEpochMilli() - weather.updated > 3600000
                 Text((weather?.let { "${it.temperature}° · Mülheim${if(stale) " · cached" else ""}" } ?: "Mülheim · weather offline"),color=dim,fontSize=11.sp)
             }
             Spacer(Modifier.width(20.dp))
-            ActionTile(Modifier.size(38.dp).testTag("all-apps"),!night,{drawer = !drawer}) { Text("▦",Modifier.align(Alignment.Center),fontSize=22.sp,color=ink) }
+            ActionTile(Modifier.size(42.dp).testTag("all-apps"),!night,{drawer = !drawer}) { Text("▦",Modifier.align(Alignment.Center),fontSize=22.sp,color=ink) }
             Spacer(Modifier.width(10.dp))
-            ActionTile(Modifier.size(38.dp).testTag("home-settings"),!night,settings) { Text("⚙",Modifier.align(Alignment.Center),fontSize=22.sp,color=ink) }
+            ActionTile(Modifier.size(42.dp).testTag("home-settings"),!night,settings) { Text("⚙",Modifier.align(Alignment.Center),fontSize=22.sp,color=ink) }
         }
         if(drawer) {
             ActionTile(Modifier.width(110.dp).height(38.dp).focusRequester(close),!night,{drawer=false}) { Text("رجوع",Modifier.align(Alignment.Center),color=ink) }
@@ -152,18 +157,19 @@ private fun DiscoverHome(apps: List<InstalledApp>, today: PrayerDay?, tomorrow: 
                 ArtPoster(Modifier.weight(1f).fillMaxHeight(), (tab+1)%2, listOf("THE\nQUIET EARTH","DEEP\nBLUE","SLOW\nHORIZONS")[tab]) { drawer = true }
             }
             PrayerStrip(today,tomorrow,now,ink,dim)
-            LazyRow(Modifier.fillMaxWidth().height(94.dp).background(if(night) Color(0xFF202229) else Color(0xFFE4E4E9),RoundedCornerShape(22.dp)).focusRestorer(),
-                contentPadding=PaddingValues(12.dp),horizontalArrangement=Arrangement.spacedBy(14.dp)) {
+            LazyRow(Modifier.fillMaxWidth().height(111.dp).background(if(night) Color(0x9A363C49) else Color(0xB5D9D9D9),RoundedCornerShape(17.5.dp)).border(1.dp,Color.White.copy(alpha=0.65f),RoundedCornerShape(17.5.dp)).focusRestorer(),
+                contentPadding=PaddingValues(horizontal=20.dp,vertical=14.dp),horizontalArrangement=Arrangement.spacedBy(24.dp)) {
                 items(apps.take(16),key={it.packageName}) { app ->
-                    DockApp(app,Modifier.width(120.dp).height(70.dp).then(if(app==apps.firstOrNull()) Modifier.focusRequester(first) else Modifier),!night) {openSafely(context,app.intent)}
+                    DockApp(app,Modifier.width(174.5.dp).height(82.5.dp).then(if(app==apps.firstOrNull()) Modifier.focusRequester(first) else Modifier),!night) {openSafely(context,app.intent)}
                 }
                 item {
-                    ActionTile(Modifier.width(100.dp).height(70.dp).then(if(apps.isEmpty()) Modifier.focusRequester(first) else Modifier),!night,{drawer=true}) {
+                    ActionTile(Modifier.width(110.dp).height(82.5.dp).then(if(apps.isEmpty()) Modifier.focusRequester(first) else Modifier),!night,{drawer=true}) {
                         Text("All apps",Modifier.align(Alignment.Center),fontSize=13.sp,color=ink)
                     }
                 }
             }
         }
+    }
     }
 }
 
@@ -243,7 +249,7 @@ private fun HomeSettings(theme: String, appearance: String, chooseTheme: (String
                 }
             }
         }
-        Text("Artwork cards are bundled samples, not live movie recommendations.\nApp banners and icons come from installed apps. Prayer times remain live from MAWAQIT.",color=Color(0xFFBDC2CE),fontSize=13.sp)
+        Text("Layout adapted from tv-makeover / DreamOS (MIT). Inter Tight (OFL).\nArtwork cards are bundled samples, not live movie recommendations.\nApp banners and icons come from installed apps. Prayer times remain live from MAWAQIT.",color=Color(0xFFBDC2CE),fontSize=13.sp)
         ActionTile(Modifier.width(240.dp).height(48.dp),onClick={openSafely(context,Intent(Settings.ACTION_SETTINGS))}) { Text("Android settings",Modifier.align(Alignment.Center),color=Color.White) }
         ActionTile(Modifier.width(160.dp).height(48.dp).testTag("settings-close"),onClick=close) { Text("Done",Modifier.align(Alignment.Center),color=Color.White) }
     }
