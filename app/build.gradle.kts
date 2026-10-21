@@ -2,7 +2,7 @@ plugins { id("com.android.application"); id("org.jetbrains.kotlin.android"); id(
 android {
  namespace = "com.alaa.tvlauncher"
  compileSdk = 36
- defaultConfig { applicationId = "com.alaa.tvlauncher"; minSdk = 22; targetSdk = 36; versionCode = 6; versionName = "1.3" }
+ defaultConfig { applicationId = "com.alaa.tvlauncher"; minSdk = 22; targetSdk = 36; versionCode = 7; versionName = "1.4" }
  buildFeatures { compose = true }
  buildTypes {
   getByName("release") {

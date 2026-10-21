@@ -38,7 +38,8 @@ private fun WebTile(modifier: Modifier, color: Color = Color(0xFF292B30), click:
     Surface(onClick=click,modifier=modifier,
         shape=ClickableSurfaceDefaults.shape(RoundedCornerShape(12.dp)),
         colors=ClickableSurfaceDefaults.colors(containerColor=color,focusedContainerColor=color,contentColor=Color.White,focusedContentColor=Color.White),
-        scale=ClickableSurfaceDefaults.scale(focusedScale=1.04f),
+        scale=ClickableSurfaceDefaults.scale(focusedScale=1.07f),
+        glow=ClickableSurfaceDefaults.glow(focusedGlow=Glow(Color(0xFF00DFFF),12.dp)),
         border=ClickableSurfaceDefaults.border(focusedBorder=Border(BorderStroke(2.dp,Color.White)))) {
         Box(Modifier.fillMaxSize(),content=content)
     }
@@ -65,7 +66,7 @@ fun WebOsHome(apps: List<InstalledApp>, today: PrayerDay?, tomorrow: PrayerDay?,
     val close=remember { FocusRequester() }
     LaunchedEffect(drawer) { delay(120); runCatching { if(drawer) close.requestFocus() else first.requestFocus() } }
     BackHandler { if(drawer) drawer=false else notice=false }
-    Row(Modifier.fillMaxSize().background(Color(0xFF17181C))) {
+    Row(Modifier.fillMaxSize().background(Color.Black)) {
         Column(Modifier.width(62.dp).fillMaxHeight().padding(top=24.dp),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.spacedBy(16.dp)) {
             WebTile(Modifier.size(34.dp).testTag("profile"),click={settings()}) { Text("A",Modifier.align(Alignment.Center),fontWeight=FontWeight.Bold,fontSize=19.sp) }
             WebTile(Modifier.size(34.dp).testTag("notifications"),click={notice=!notice}) { BellIcon(Modifier.align(Alignment.Center).size(21.dp)) }
@@ -94,11 +95,11 @@ fun WebOsHome(apps: List<InstalledApp>, today: PrayerDay?, tomorrow: PrayerDay?,
             WebHero(series,today,tomorrow,now,Modifier.fillMaxWidth().weight(1f)) { categoryApp(0,apps)?.let { openSafely(context,it.intent) } ?: run { drawer=true } }
             if(notice) Text("No new launcher notifications",color=Color.White,fontSize=12.sp)
             Row(Modifier.fillMaxWidth().height(38.dp),horizontalArrangement=Arrangement.spacedBy(10.dp)) {
-                val colors=listOf(0xFF515FC1,0xFF96553C,0xFF626A35,0xFF8D3747,0xFF416E72)
+                val colors=listOf(0xFF008F87,0xFF7422DD,0xFFD60069,0xFF075DE5,0xFFB3F000)
                 listOf("Alaa Player","أفلام","مسلسلات","يوتيوب","رياضة").forEachIndexed { index,label ->
                     WebTile(Modifier.weight(1f).fillMaxHeight().testTag("category-$index"),Color(colors[index]),{
                         categoryApp(index,apps)?.let { openSafely(context,it.intent) } ?: run { drawer=true }
-                    }) { Text(label,Modifier.align(Alignment.Center),fontSize=15.sp,fontWeight=FontWeight.Medium) }
+                    }) { Text(label,Modifier.align(Alignment.Center),fontSize=15.sp,fontWeight=FontWeight.Bold,color=if(index==4) Color(0xFF102000) else Color.White) }
                 }
             }
             LazyRow(Modifier.fillMaxWidth().height(66.dp).focusRestorer(),contentPadding=PaddingValues(4.dp),horizontalArrangement=Arrangement.spacedBy(12.dp)) {
@@ -122,7 +123,7 @@ fun WebOsHome(apps: List<InstalledApp>, today: PrayerDay?, tomorrow: PrayerDay?,
                 items(series,key={it.id},contentType={"series"}) { show ->
                     WebTile(Modifier.width(190.dp).height(106.dp).testTag("series-${show.id}"),click={ categoryApp(2,apps)?.let { openSafely(context,it.intent) } ?: run { drawer=true } }) {
                         SeriesArt(show,Modifier.fillMaxSize())
-                        Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent,Color(0xD9000000)))))
+                        Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent,Color(0x80000000)))))
                         Text(show.title,Modifier.align(Alignment.BottomStart).padding(10.dp),color=Color.White,fontSize=14.sp,fontWeight=FontWeight.Bold,maxLines=1,overflow=TextOverflow.Ellipsis)
                     }
                 }
@@ -150,7 +151,7 @@ private fun WebHero(series: List<Series>,today: PrayerDay?,tomorrow: PrayerDay?,
     val show=series.getOrNull(page)
     Box(modifier.clip(RoundedCornerShape(18.dp)).testTag("webos-hero")) {
         SeriesArt(show,Modifier.fillMaxSize())
-        Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(Color(0xE0101721),Color(0x5B101721),Color(0xB5101721)))))
+        Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Color.Transparent,.65f to Color.Transparent,1f to Color(0x65000000))))
         Column(Modifier.align(Alignment.CenterStart).padding(24.dp).fillMaxWidth(.46f),verticalArrangement=Arrangement.spacedBy(7.dp)) {
             Text("Alaa TV",color=Color(0xFFE3DED4),fontSize=12.sp)
             Text(show?.title ?: "Your next great story",color=Color.White,fontSize=32.sp,fontWeight=FontWeight.Bold,maxLines=2,overflow=TextOverflow.Ellipsis)
@@ -158,7 +159,7 @@ private fun WebHero(series: List<Series>,today: PrayerDay?,tomorrow: PrayerDay?,
             WebTile(Modifier.width(124.dp).height(32.dp),Color.White,click) { Text("Open Alaa Player",Modifier.align(Alignment.Center),color=Color.Black,fontSize=11.sp,fontWeight=FontWeight.Bold) }
         }
         Column(Modifier.align(Alignment.TopEnd).padding(12.dp).width(390.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
-            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Color(0xCE222A35)).padding(horizontal=14.dp,vertical=8.dp).testTag("clock-glass"),horizontalAlignment=Alignment.End) {
+            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Color(0xB0000000)).padding(horizontal=14.dp,vertical=8.dp).testTag("clock-glass"),horizontalAlignment=Alignment.End) {
                 Text(now.format(webClock),color=Color.White,fontSize=32.sp,fontWeight=FontWeight.Bold)
                 Text(now.format(webDate),color=Color(0xFFCBD2DD),fontSize=12.sp)
             }

@@ -63,7 +63,7 @@ class WebOsTest {
         rule.onNodeWithText("Top picks for you").assertExists()
         rule.onNodeWithTag("all-apps").assertIsFocused()
         rule.onNodeWithText("الطقس").assertDoesNotExist()
-        capture("alaa-tv-1.3")
+        capture("alaa-tv-1.4")
         press("all-apps")
         rule.onNodeWithText("Your apps").assertExists()
         press("drawer-close")
