@@ -27,14 +27,24 @@ internal fun prayer12(value: String): String {
 private val hijriMonths=listOf("محرم","صفر","ربيع الأول","ربيع الآخر","جمادى الأولى","جمادى الآخرة","رجب","شعبان","رمضان","شوال","ذو القعدة","ذو الحجة")
 private val gregMonths=listOf("يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر")
 private val weekDays=listOf("الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت","الأحد")
-internal fun ramadanDays(date: LocalDate): Long {
-    val h=HijrahDate.from(date)
-    var year=h.get(ChronoField.YEAR)
-    var start=LocalDate.from(HijrahDate.of(year,9,1))
-    if(date.isAfter(start) && h.get(ChronoField.MONTH_OF_YEAR)!=9) {
-        year++;start=LocalDate.from(HijrahDate.of(year,9,1))
+internal data class HijriParts(val year: Int,val month: Int,val day: Int)
+internal fun hijriParts(date: LocalDate): HijriParts {
+    if(android.os.Build.VERSION.SDK_INT>=24) {
+        val cal=android.icu.util.IslamicCalendar(android.icu.util.TimeZone.getTimeZone("UTC"))
+        cal.calculationType=android.icu.util.IslamicCalendar.CalculationType.ISLAMIC_UMALQURA
+        cal.timeInMillis=date.atTime(12,0).toInstant(ZoneOffset.UTC).toEpochMilli()
+        return HijriParts(cal.get(android.icu.util.Calendar.YEAR),cal.get(android.icu.util.Calendar.MONTH)+1,cal.get(android.icu.util.Calendar.DAY_OF_MONTH))
     }
-    return ChronoUnit.DAYS.between(date,start).coerceAtLeast(0)
+    val h=HijrahDate.from(date)
+    return HijriParts(h.get(ChronoField.YEAR),h.get(ChronoField.MONTH_OF_YEAR),h.get(ChronoField.DAY_OF_MONTH))
+}
+internal fun ramadanDays(date: LocalDate): Long {
+    if(hijriParts(date).month==9) return 0
+    for(offset in 0L..385L) {
+        val h=hijriParts(date.plusDays(offset))
+        if(h.month==9 && h.day==1) return offset
+    }
+    return 0
 }
 @Composable
 private fun GlassCell(modifier: Modifier,active: Boolean=false, content: @Composable ColumnScope.()->Unit) {
@@ -56,7 +66,7 @@ internal fun PrayerCalendarPanel(today: PrayerDay?,tomorrow: PrayerDay?,now: Zon
     }
     val tick=now.plusSeconds(elapsed)
     val date=tick.toLocalDate()
-    val hijri=remember(date) { HijrahDate.from(date) }
+    val hijri=remember(date) { hijriParts(date) }
     val valid=today?.takeIf { it.date==date }
     val next=PrayerParser.next(valid,tomorrow,tick)
     val seconds=next?.let { Duration.between(tick,it.second).seconds.coerceAtLeast(0) }
@@ -86,8 +96,8 @@ internal fun PrayerCalendarPanel(today: PrayerDay?,tomorrow: PrayerDay?,now: Zon
             Row(Modifier.fillMaxWidth().height(100.dp),horizontalArrangement=Arrangement.spacedBy(10.dp)) {
                 GlassCell(Modifier.weight(1f).fillMaxHeight().testTag("hijri-date")) {
                     Text("التقويم الهجري",color=Color(0xFFD4E1E6),fontSize=11.sp)
-                    Text("${hijri.get(ChronoField.DAY_OF_MONTH)}",color=Color.White,fontSize=28.sp,fontWeight=FontWeight.Bold)
-                    Text("${hijriMonths[hijri.get(ChronoField.MONTH_OF_YEAR)-1]} ${hijri.get(ChronoField.YEAR)} هـ",color=Color.White,fontSize=12.sp)
+                    Text("${hijri.day}",color=Color.White,fontSize=28.sp,fontWeight=FontWeight.Bold)
+                    Text("${hijriMonths[hijri.month-1]} ${hijri.year} هـ",color=Color.White,fontSize=12.sp)
                     Text(weekDays[date.dayOfWeek.value-1],color=Color(0xFFD4E1E6),fontSize=10.sp)
                 }
                 GlassCell(Modifier.weight(1f).fillMaxHeight().testTag("gregorian-date")) {

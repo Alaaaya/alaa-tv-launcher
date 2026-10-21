@@ -34,7 +34,7 @@ import java.time.*
 import java.time.format.DateTimeFormatter
 
 @Composable
-private fun WebTile(modifier: Modifier, color: Color = Color(0xFF292B30), click: () -> Unit, content: @Composable BoxScope.()->Unit) {
+internal fun WebTile(modifier: Modifier, color: Color = Color(0xFF292B30), click: () -> Unit, content: @Composable BoxScope.()->Unit) {
     Surface(onClick=click,modifier=modifier,
         shape=ClickableSurfaceDefaults.shape(RoundedCornerShape(12.dp)),
         colors=ClickableSurfaceDefaults.colors(containerColor=color,focusedContainerColor=color,contentColor=Color.White,focusedContentColor=Color.White),
@@ -61,17 +61,24 @@ internal fun categoryApp(category: Int, apps: List<InstalledApp>): InstalledApp?
 fun WebOsHome(apps: List<InstalledApp>, today: PrayerDay?, tomorrow: PrayerDay?, now: ZonedDateTime, series: List<Series>, settings: ()->Unit) {
     val context=LocalContext.current
     var drawer by remember { mutableStateOf(false) }
+    var prayerPage by remember { mutableStateOf(false) }
+    val prayerFocus=remember { FocusRequester() }
     var notice by remember { mutableStateOf(false) }
     val first=remember { FocusRequester() }
     val close=remember { FocusRequester() }
     LaunchedEffect(drawer) { delay(120); runCatching { if(drawer) close.requestFocus() else first.requestFocus() } }
+    if(prayerPage) {
+        PrayerPage(today,tomorrow,now) { prayerPage=false }
+        return
+    }
     BackHandler { if(drawer) drawer=false else notice=false }
     Row(Modifier.fillMaxSize().background(Color.Black)) {
         Column(Modifier.width(62.dp).fillMaxHeight().padding(top=24.dp),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.spacedBy(16.dp)) {
-            WebTile(Modifier.size(34.dp).focusRequester(first).testTag("profile"),click={settings()}) { Text("A",Modifier.align(Alignment.Center),fontWeight=FontWeight.Bold,fontSize=19.sp) }
+            WebTile(Modifier.size(34.dp).testTag("profile"),click={settings()}) { Text("A",Modifier.align(Alignment.Center),fontWeight=FontWeight.Bold,fontSize=19.sp) }
             WebTile(Modifier.size(34.dp).testTag("notifications"),click={notice=!notice}) { BellIcon(Modifier.align(Alignment.Center).size(21.dp)) }
             WebTile(Modifier.size(34.dp).testTag("home-settings"),click=settings) { Text("⚙",Modifier.align(Alignment.Center),fontSize=23.sp) }
             WebTile(Modifier.size(34.dp).testTag("search-apps"),click={openSafely(context,Intent(Intent.ACTION_SEARCH_LONG_PRESS))}) { Text("⌕",Modifier.align(Alignment.Center),fontSize=27.sp) }
+            WebTile(Modifier.size(34.dp).focusRequester(prayerFocus).testTag("open-prayer").semantics { contentDescription="مواقيت الصلاة" },click={prayerPage=true}) { MosqueIcon(Modifier.align(Alignment.Center).size(24.dp)) }
             Spacer(Modifier.weight(1f))
             Text("TV",Modifier.padding(bottom=20.dp),color=Color(0xFF95969C),fontSize=12.sp)
         }
@@ -91,9 +98,8 @@ fun WebOsHome(apps: List<InstalledApp>, today: PrayerDay?, tomorrow: PrayerDay?,
                     }
                 }
             }
-        } else Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(top=18.dp,end=24.dp,bottom=14.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
-            WebHero(series,today,tomorrow,now,Modifier.fillMaxWidth().height(180.dp)) { categoryApp(0,apps)?.let { openSafely(context,it.intent) } ?: run { drawer=true } }
-            PrayerCalendarPanel(today,tomorrow,now)
+        } else Column(Modifier.fillMaxSize().padding(top=18.dp,end=24.dp,bottom=14.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
+            WebHero(series,today,tomorrow,now,Modifier.fillMaxWidth().weight(1f)) { categoryApp(0,apps)?.let { openSafely(context,it.intent) } ?: run { drawer=true } }
             if(notice) Text("No new launcher notifications",color=Color.White,fontSize=12.sp)
             Row(Modifier.fillMaxWidth().height(38.dp),horizontalArrangement=Arrangement.spacedBy(10.dp)) {
                 val colors=listOf(0xFF008F87,0xFF7422DD,0xFFD60069,0xFF075DE5,0xFFB3F000)
@@ -105,7 +111,7 @@ fun WebOsHome(apps: List<InstalledApp>, today: PrayerDay?, tomorrow: PrayerDay?,
             }
             LazyRow(Modifier.fillMaxWidth().height(66.dp).focusRestorer(),contentPadding=PaddingValues(4.dp),horizontalArrangement=Arrangement.spacedBy(12.dp)) {
                 item(key="all",contentType="action") {
-                    WebTile(Modifier.size(58.dp).testTag("all-apps"),Color(0xFFF0EDE7),{drawer=true}) {
+                    WebTile(Modifier.size(58.dp).testTag("all-apps").focusRequester(first),Color(0xFFF0EDE7),{drawer=true}) {
                         Column(Modifier.align(Alignment.Center),horizontalAlignment=Alignment.CenterHorizontally) {
                             Text("▦",color=Color(0xFF27292D),fontSize=24.sp)
                             Text("APPS",color=Color(0xFF27292D),fontSize=9.sp,fontWeight=FontWeight.Bold)
@@ -164,7 +170,7 @@ private fun WebHero(series: List<Series>,today: PrayerDay?,tomorrow: PrayerDay?,
                 Text(now.format(webClock),color=Color.White,fontSize=32.sp,fontWeight=FontWeight.Bold)
                 Text(now.format(webDate),color=Color(0xFFCBD2DD),fontSize=12.sp)
             }
-
+            PrayerStrip(today,tomorrow,now,Color(0xFFF5F5F7),Color(0xFFB4B6C3))
         }
         Row(Modifier.align(Alignment.BottomStart).padding(start=24.dp,bottom=12.dp),horizontalArrangement=Arrangement.spacedBy(5.dp)) {
             repeat(series.size.coerceAtMost(5)) { index -> Box(Modifier.size(if(index==page) 7.dp else 5.dp).background(if(index==page) Color.White else Color(0xFF777D88),RoundedCornerShape(50))) }
@@ -187,5 +193,17 @@ private fun BellIcon(modifier: Modifier) {
         }
         drawPath(bell,Color.White,style=Stroke(width=1.6.dp.toPx()))
         drawCircle(Color.White,radius=1.6.dp.toPx(),center=Offset(size.width*.5f,size.height*.88f))
+    }
+}
+
+@Composable
+private fun MosqueIcon(modifier: Modifier) {
+    Canvas(modifier) {
+        val w=size.width; val h=size.height
+        drawRect(Color.White,Offset(w*.12f,h*.5f),androidx.compose.ui.geometry.Size(w*.76f,h*.4f))
+        drawOval(Color.White,Offset(w*.25f,h*.24f),androidx.compose.ui.geometry.Size(w*.5f,h*.48f))
+        drawRect(Color.White,Offset(w*.1f,h*.13f),androidx.compose.ui.geometry.Size(w*.1f,h*.7f))
+        drawRect(Color.White,Offset(w*.8f,h*.13f),androidx.compose.ui.geometry.Size(w*.1f,h*.7f))
+        drawRect(Color(0xFF292B30),Offset(w*.43f,h*.65f),androidx.compose.ui.geometry.Size(w*.14f,h*.25f))
     }
 }

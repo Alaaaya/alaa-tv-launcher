@@ -61,12 +61,21 @@ class WebOsTest {
         rule.onNodeWithTag("clock-glass").assertExists()
         rule.onNodeWithTag("prayer-glass").assertExists()
         rule.onNodeWithText("Top picks for you").assertExists()
-        rule.onNodeWithText("مواقيت الصلاة · مسجد الرحمة مولهايم").assertExists()
-        rule.onNodeWithText("الطقس").assertDoesNotExist()
+        rule.onNodeWithTag("prayer-page").assertDoesNotExist()
+        capture("alaa-tv-1.7-home")
+        press("open-prayer")
+        rule.onNodeWithTag("prayer-page").assertExists()
         rule.onNodeWithTag("hijri-date").assertExists()
         rule.onNodeWithTag("gregorian-date").assertExists()
         rule.onNodeWithTag("ramadan-countdown").assertExists()
-        capture("alaa-tv-1.6")
+        (0..4).forEach { rule.onNodeWithTag("prayer-tile-$it").assertExists() }
+        capture("alaa-tv-1.7-prayer")
+        press("prayer-back")
+        rule.onNodeWithTag("webos-hero").assertExists()
+        press("open-prayer")
+        rule.runOnUiThread { rule.activity.onBackPressedDispatcher.onBackPressed() }
+        rule.mainClock.advanceTimeBy(2000)
+        rule.onNodeWithTag("prayer-page").assertDoesNotExist()
         press("all-apps")
         rule.onNodeWithText("Your apps").assertExists()
         press("drawer-close")
@@ -79,6 +88,13 @@ class WebOsTest {
         press("settings-close")
         rule.onNodeWithTag("webos-hero").assertExists()
         assertEquals("webOS",rule.activity.getSharedPreferences("appearance",0).getString("theme",""))
+    }
+    @Test fun ummAlQuraDatesAndRamadan() {
+        assertEquals(HijriParts(1447,9,1),hijriParts(LocalDate.of(2026,2,18)))
+        assertEquals(1L,ramadanDays(LocalDate.of(2026,2,17)))
+        assertEquals(0L,ramadanDays(LocalDate.of(2026,2,20)))
+        assertEquals("12:05 ص",prayer12("00:05"))
+        assertEquals("1:17 م",prayer12("13:17"))
     }
     @Test fun categoriesResolveInstalledApps() {
         val apps=listOf(InstalledApp("player.alaa","Alaa Player",Intent(),null),InstalledApp("youtube.tv","YouTube",Intent(),null))
