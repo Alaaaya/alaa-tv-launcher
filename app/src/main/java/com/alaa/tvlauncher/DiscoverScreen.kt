@@ -50,7 +50,7 @@ fun isNight(now: ZonedDateTime): Boolean {
 
 @Composable
 fun LauncherHome(apps: List<InstalledApp>, today: PrayerDay?, tomorrow: PrayerDay?,
-                 weather: Weather?, match: Match?, now: ZonedDateTime) {
+                 weather: Weather?, now: ZonedDateTime) {
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("appearance", Context.MODE_PRIVATE) }
     var theme by remember { mutableStateOf(prefs.getString("theme", "Discover") ?: "Discover") }
@@ -63,7 +63,7 @@ fun LauncherHome(apps: List<InstalledApp>, today: PrayerDay?, tomorrow: PrayerDa
                 HomeSettings(theme, appearance, { theme = it; prefs.edit().putString("theme",it).apply() },
                     { appearance = it; prefs.edit().putString("appearance",it).apply() }, { settings = false })
             } else if (theme == "Classic") {
-                ClassicHome(apps,today,tomorrow,weather,match,now) { settings = true }
+                ClassicHome(apps,today,tomorrow,weather,now) { settings = true }
             } else {
                 DiscoverHome(apps,today,tomorrow,weather,now,night) { settings = true }
             }

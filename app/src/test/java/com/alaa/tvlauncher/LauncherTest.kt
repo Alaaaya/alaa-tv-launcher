@@ -59,7 +59,6 @@ class LauncherTest {
                 PrayerDay(date,listOf("06:15","13:17","15:55","18:29","20:12"),false),
                 PrayerDay(date.plusDays(1),listOf("06:17","13:17","15:53","18:27","20:10"),true),
                 Weather(14,2,System.currentTimeMillis()),
-                Match("Borussia Dortmund","Bayern München","Bundesliga","20:30",date.toString()),
                 date.atTime(17,56).atZone(berlin))
         }
         rule.mainClock.advanceTimeBy(1000)

@@ -31,7 +31,7 @@ class DiscoverTest {
             LauncherHome(apps,
                 PrayerDay(date,listOf("06:15","13:17","15:55","18:29","20:12"),false),
                 PrayerDay(date.plusDays(1),listOf("06:17","13:17","15:53","18:27","20:10"),true),
-                Weather(14,2,System.currentTimeMillis()),null,date.atTime(16,0).atZone(berlin))
+                Weather(14,2,System.currentTimeMillis()),date.atTime(16,0).atZone(berlin))
         }
         rule.mainClock.advanceTimeBy(2000)
     }

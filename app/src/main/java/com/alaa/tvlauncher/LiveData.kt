@@ -4,17 +4,14 @@ import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
-import org.json.JSONArray
 import java.net.URL
 import java.net.HttpURLConnection
 import java.time.*
-import java.time.format.DateTimeFormatter
 
 val berlin: ZoneId = ZoneId.of("Europe/Berlin")
 val prayerNames = listOf("الفجر", "الظهر", "العصر", "المغرب", "العشاء")
 data class PrayerDay(val date: LocalDate, val times: List<String>, val cached: Boolean)
 data class Weather(val temperature: Int, val code: Int, val updated: Long)
-data class Match(val home: String, val away: String, val league: String, val kickoff: String, val date: String)
 
 object PrayerParser {
     // Balanced JSON extraction, including braces and escaped quotes inside strings.
@@ -64,7 +61,7 @@ class LiveRepository(context: Context) {
     private fun get(url: String): String {
         val c = URL(url).openConnection() as HttpURLConnection
         c.connectTimeout = 12000; c.readTimeout = 12000
-        c.setRequestProperty("User-Agent", "AlaaTV/1.0 personal home launcher")
+        c.setRequestProperty("User-Agent", "AlaaTV/1.1 personal home launcher")
         return try { require(c.responseCode in 200..299); c.inputStream.bufferedReader().use { it.readText() } }
         finally { c.disconnect() }
     }
@@ -100,20 +97,7 @@ class LiveRepository(context: Context) {
             w
         }.getOrElse { cachedWeather() }
     }
-    suspend fun match(): Match? = withContext(Dispatchers.IO) {
-        runCatching {
-            val day = LocalDate.now(berlin)
-            val events = JSONObject(get("https://www.thesportsdb.com/api/v1/json/123/eventsday.php?d=$day&s=Soccer")).optJSONArray("events") ?: return@runCatching null
-            val items = (0 until events.length()).map { events.getJSONObject(it) }
-                .filter { it.optString("strSport") == "Soccer" && it.optString("dateEvent") == day.toString() }
-            val event = items.firstOrNull { it.optString("strLeague").contains("German") } ?: items.firstOrNull() ?: return@runCatching null
-            val kickoff = runCatching {
-                val time = LocalTime.parse(event.getString("strTime").take(8))
-                day.atTime(time).atZone(ZoneOffset.UTC).withZoneSameInstant(berlin).format(DateTimeFormatter.ofPattern("HH:mm"))
-            }.getOrDefault("—")
-            Match(event.getString("strHomeTeam"), event.getString("strAwayTeam"), event.optString("strLeague"), kickoff, day.toString())
-        }.getOrNull()
-    }
+
 }
 fun weatherLabel(code: Int): String = when(code) {
     0 -> "سماء صافية"; 1, 2 -> "غائم جزئياً"; 3 -> "غائم"; 45, 48 -> "ضباب"

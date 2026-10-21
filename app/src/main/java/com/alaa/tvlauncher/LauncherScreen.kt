@@ -49,7 +49,6 @@ fun LauncherScreen(revision: Int) {
     var today by remember { mutableStateOf(cached.first) }
     var tomorrow by remember { mutableStateOf(cached.second) }
     var weather by remember { mutableStateOf(repo.cachedWeather()) }
-    var match by remember { mutableStateOf<Match?>(null) }
     var now by remember { mutableStateOf(ZonedDateTime.now(berlin)) }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     LaunchedEffect(revision, lifecycle) {
@@ -63,10 +62,9 @@ fun LauncherScreen(revision: Int) {
             }
         }
         launch { while (isActive) { weather = repo.weather(); delay(15 * 60 * 1000L) } }
-        launch { while (isActive) { match = repo.match(); delay(60 * 60 * 1000L) } }
       }
     }
-    LauncherHome(apps, today, tomorrow, weather, match, now)
+    LauncherHome(apps, today, tomorrow, weather, now)
 }
 
 @Composable
@@ -84,7 +82,7 @@ private fun Tile(modifier: Modifier = Modifier, onClick: () -> Unit, content: @C
 @Composable
 fun ClassicHome(
     apps: List<InstalledApp>, today: PrayerDay?, tomorrow: PrayerDay?,
-    weather: Weather?, match: Match?, now: ZonedDateTime, onSettings: () -> Unit = {}
+    weather: Weather?, now: ZonedDateTime, onSettings: () -> Unit = {}
 ) {
     val context = LocalContext.current
     var allApps by remember { mutableStateOf(false) }
@@ -152,10 +150,7 @@ fun ClassicHome(
                     }
                     Row(Modifier.fillMaxWidth().height(148.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         PrayerCard(today, tomorrow, now, Modifier.weight(1.15f))
-                        if (match != null && match.date == now.toLocalDate().toString()) {
-                            MatchCard(match, Modifier.weight(1f))
-                        }
-                        WeatherCard(weather, now, Modifier.weight(if (match == null) .85f else .8f))
+                        WeatherCard(weather, now, Modifier.weight(.85f))
                     }
                 }
                 }
@@ -236,18 +231,6 @@ private fun PrayerCard(today: PrayerDay?, tomorrow: PrayerDay?, now: ZonedDateTi
             }
             Text(if (today.cached) "MAWAQIT · محفوظ دون اتصال" else "MAWAQIT · أوقات المسجد", color = Muted, fontSize = 8.sp, modifier = Modifier.padding(top = 4.dp))
         }
-    }
-}
-@Composable
-private fun MatchCard(match: Match, modifier: Modifier) {
-    InfoCard(modifier, listOf(Color(0xFF18372E), Color(0xFF101A1A))) {
-        Text("⚽  مباراة اليوم", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.weight(1f))
-        Text(match.home, color = Color.White, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        Text("VS  ${match.away}", color = Gold, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        Spacer(Modifier.weight(1f))
-        Text("${match.kickoff}  ·  ${match.league}", color = Muted, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        Text("TheSportsDB · بتوقيت ألمانيا", color = Muted, fontSize = 8.sp)
     }
 }
 @Composable
