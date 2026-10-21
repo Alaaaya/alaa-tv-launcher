@@ -31,7 +31,8 @@ class DiscoverTest {
             LauncherHome(apps,
                 PrayerDay(date,listOf("06:15","13:17","15:55","18:29","20:12"),false),
                 PrayerDay(date.plusDays(1),listOf("06:17","13:17","15:53","18:27","20:10"),true),
-                Weather(14,2,System.currentTimeMillis()),date.atTime(16,0).atZone(berlin))
+                Weather(14,2,System.currentTimeMillis()),date.atTime(16,0).atZone(berlin),
+                listOf(Series(1,"Fixture Drama",null),Series(2,"Night Shift",null),Series(3,"Long Harbor",null),Series(4,"Paper Moon",null)))
         }
         rule.mainClock.advanceTimeBy(2000)
     }
@@ -52,6 +53,12 @@ class DiscoverTest {
         file.parentFile!!.mkdirs()
         file.outputStream().use { bitmap!!.compress(Bitmap.CompressFormat.PNG,100,it) }
     }
+    @Test fun glassApiGate() {
+        assertFalse(glassBlurSupported(22))
+        assertFalse(glassBlurSupported(30))
+        assertTrue(glassBlurSupported(31))
+        assertTrue(glassBlurSupported(36))
+    }
     @Test fun solarDayNightTracksSeasonsAndTimezone() {
         assertFalse(isNight(date.atTime(12,0).atZone(berlin)))
         assertTrue(isNight(date.atTime(23,0).atZone(berlin)))
@@ -64,12 +71,14 @@ class DiscoverTest {
         home()
         rule.onNodeWithText("For You").assertExists()
         rule.onNodeWithText("مسجد الرحمة").assertExists()
+        rule.onNodeWithTag("prayer-glass").assertExists()
+        listOf("06:15","13:17","15:55","18:29","20:12").forEach { time ->
+            rule.onAllNodesWithText(time,substring=true).onFirst().assertExists()
+        }
         rule.onNodeWithTag("app-fixture.0").assertIsFocused()
-        capture("alaa-tv-1.1-light")
-        press("tab-1")
-        rule.onNodeWithText("The great\nescape").assertExists()
-        press("tab-2")
-        rule.onNodeWithText("Stories worth\nstaying in for").assertExists()
+        capture("alaa-tv-1.2-light")
+        rule.onNodeWithTag("clock-glass").assertExists()
+        rule.onNodeWithText("Fixture Drama").assertExists()
         press("all-apps")
         rule.onNodeWithText("Your apps").assertExists()
         rule.onNodeWithText("رجوع").performSemanticsAction(SemanticsActions.RequestFocus) { it() }
@@ -82,7 +91,7 @@ class DiscoverTest {
         press("home-settings")
         press("appearance-Dark")
         press("settings-close")
-        capture("alaa-tv-1.1-dark")
+        capture("alaa-tv-1.2-dark")
         press("home-settings")
         press("theme-Classic")
         assertEquals("Classic",rule.activity.getSharedPreferences("appearance",0).getString("theme",""))

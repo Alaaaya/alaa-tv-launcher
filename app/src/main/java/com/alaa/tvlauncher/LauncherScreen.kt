@@ -49,22 +49,24 @@ fun LauncherScreen(revision: Int) {
     var today by remember { mutableStateOf(cached.first) }
     var tomorrow by remember { mutableStateOf(cached.second) }
     var weather by remember { mutableStateOf(repo.cachedWeather()) }
+    var series by remember { mutableStateOf(emptyList<Series>()) }
     var now by remember { mutableStateOf(ZonedDateTime.now(berlin)) }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     LaunchedEffect(revision, lifecycle) {
       lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
         apps = withContext(Dispatchers.IO) { loadApps(context) }
-        launch { while (isActive) { now = ZonedDateTime.now(berlin); delay(1000) } }
+        launch { while (isActive) { now = ZonedDateTime.now(berlin); delay(60_000 - System.currentTimeMillis() % 60_000) } }
         launch {
             while (isActive) {
                 val days = repo.prayers(); today = days.first; tomorrow = days.second
                 delay(15 * 60 * 1000L)
             }
         }
+        launch { series = withContext(Dispatchers.IO) { repo.cachedSeries() }; while (isActive) { series = repo.series(); delay(6 * 60 * 60 * 1000L) } }
         launch { while (isActive) { weather = repo.weather(); delay(15 * 60 * 1000L) } }
       }
     }
-    LauncherHome(apps, today, tomorrow, weather, now)
+    LauncherHome(apps, today, tomorrow, weather, now, series)
 }
 
 @Composable
@@ -119,7 +121,7 @@ fun ClassicHome(
                             AnimatedContent(hero, label = "hero") { page ->
                                 Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
                                     Text(listOf("عالمك على شاشة واحدة", "وقتك… إلك", "كل اللي بتحبّه، هون")[page], fontSize = 30.sp, color = Color.White, fontWeight = FontWeight.Bold)
-                                    Text(listOf("تطبيقاتك المفضلة، الصلاة والطقس", "افتح تطبيقك المفضل واستمتع بوقتك", "بداية بسيطة لكل سهرة حلوة")[page], fontSize = 13.sp, color = Color(0xFFE0E3E9))
+                                    Text(listOf("تطبيقاتك المفضلة ومواقيت الصلاة", "افتح تطبيقك المفضل واستمتع بوقتك", "بداية بسيطة لكل سهرة حلوة")[page], fontSize = 13.sp, color = Color(0xFFE0E3E9))
                                 }
                             }
                             Spacer(Modifier.height(3.dp))
@@ -150,7 +152,7 @@ fun ClassicHome(
                     }
                     Row(Modifier.fillMaxWidth().height(148.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         PrayerCard(today, tomorrow, now, Modifier.weight(1.15f))
-                        WeatherCard(weather, now, Modifier.weight(.85f))
+
                     }
                 }
                 }

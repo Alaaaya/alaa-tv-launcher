@@ -52,3 +52,49 @@ Seven automated Robolectric tests cover prayer parsing/DST, Classic drawer remot
 Discover now also adapts the actual paisanos-io/tv-makeover DreamOS source geometry: 75dp horizontal inset, 24sp Inter Tight wordmark with 18sp clock beneath, 42dp header controls, 174.5×82.5dp app tiles separated by 24dp, and a rounded translucent dock with a 1dp white edge. The existing bundled landscape supplies a wallpaper, with light/dark translucent overlays following the saved solar setting. The owner's requested poster row and MAWAQIT strip are retained above the dock. These additions make this a hybrid, not a pixel-identical DreamOS clone. Glass is translucent compositing, not dynamic backdrop blur.
 
 Source inspected at https://github.com/paisanos-io/tv-makeover, templates/dreamos. MIT notice, including cleanyourtv attribution, is packaged in assets/tv-makeover-LICENSE.txt; the reused Inter Tight font and OFL notice are bundled. DreamOS wallpaper and sounds are explicitly owner's artwork and were NOT redistributed. No upstream debloat scripts or privileges are included. The upstream template does not itself provide movie posters or an automatic day/night system, so our existing sample posters and solar switching remain.
+
+### Frosted glass and performance pass
+
+Release builds now enable R8 and resource shrinking and include ProfileInstaller 1.4.1 plus conservative hand-authored baseline rules for entry/UI paths, merged with the dependency profiles. These rules have NOT been collected from a TV journey or benchmarked on a device. Release signing intentionally retains the existing installation certificate.
+
+API 31+ glass layers use a blurred static bundled landscape beneath a translucent gradient, while all foreground text, logos and focus outlines stay sharp. Older devices use the translucent gradient only. This is a local frosted image layer, NOT live sampling of arbitrary views behind each card. The static scene keeps GPU work bounded; no continuously moving full-screen shader or wallpaper animation. TV Material focus transforms and lazy dock scrolling remain hardware-layer based. Dock items now have stable package keys and reusable content types. Day/night color animation reads occur in draw instead of rebuilding the tree every frame.
+
+The root clock updates once a minute instead of invalidating the entire home every second. Discover's second countdown is isolated inside the prayer-strip composition and suspends when the activity is not STARTED. Image loading and network requests remain off the main thread.
+
+60fps is a target, not an achieved measurement. No physical TV, GPU framestats, Macrobenchmark, or device-generated baseline profile was available here. Before claiming zero jank, measure the signed release on the owner's TV across cold start, repeated left/right focus, drawer scrolling and theme changes; record frame-time p50/p90/p99 and frames over 16.7ms.
+
+
+### Glass TV Home reference review
+
+Inspected https://github.com/moondayli/glass-tv-home, including LICENSE,
+Glass.java and Backdrop.java. Code is MIT, copyright 2026 Glass TV Home
+contributors; its full notice is packaged as assets/GLASS_TV_HOME_LICENSE.txt.
+Adapted the separate top-sheen and diagonal bright/dim/bright rim treatment
+to Compose. The overlay is drawn AFTER card artwork so opaque app banners
+and posters retain a glass highlight. Brushes are remembered; no pointer
+handlers are added. Layout remains the tv-makeover hybrid, Classic remains.
+
+The reference's 96x54 CPU-blurred, screen-coordinate BitmapShader sampling
+was reviewed but not copied: our current glass still uses local static-art
+RenderEffect blur on API31+, gradient fallback below. This is NOT live
+backdrop sampling or the reference's pixel-identical glass. No adware,
+ADB, TV-disabling or installation scripts were run. No TVmaze/Unsplash
+artwork or their separate licenses were imported.
+
+### v1.2 widgets and series
+
+Discover now has exactly two widget cards: a large Arabic date/clock and
+a 104dp frosted prayer card with all five times, next-prayer highlight and
+a live countdown. Discover no longer displays weather. Classic remains available.
+
+The poster row loads real posters for English scripted series airing today,
+ranked by TVmaze weight using its keyless web and US schedules. This is
+TVmaze popularity, not verified streaming-viewership rankings. Metadata and
+poster files are retained offline; refresh is attempted every six hours and
+a successful day's response is reused until the next date. No API key or
+TMDB configuration is needed. TVmaze show data is CC BY-SA and attributed in
+settings. Posters are externally supplied promotional artwork, not app logos.
+Poster cards open the app drawer, not an episode stream.
+
+Robolectric screenshots use explicitly named fixture shows without remote
+posters so UI tests remain deterministic and never misrepresent a live feed.

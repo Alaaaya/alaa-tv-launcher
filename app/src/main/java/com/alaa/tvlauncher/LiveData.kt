@@ -7,10 +7,15 @@ import org.json.JSONObject
 import java.net.URL
 import java.net.HttpURLConnection
 import java.time.*
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import java.io.File
+import org.json.JSONArray
 
 val berlin: ZoneId = ZoneId.of("Europe/Berlin")
 val prayerNames = listOf("الفجر", "الظهر", "العصر", "المغرب", "العشاء")
 data class PrayerDay(val date: LocalDate, val times: List<String>, val cached: Boolean)
+data class Series(val id: Int, val title: String, val poster: Bitmap?)
 data class Weather(val temperature: Int, val code: Int, val updated: Long)
 
 object PrayerParser {
@@ -98,6 +103,53 @@ class LiveRepository(context: Context) {
         }.getOrElse { cachedWeather() }
     }
 
+    private val posterDir = File(context.filesDir, "series-posters")
+    private fun bytes(url: String): ByteArray {
+        val c = URL(url).openConnection() as HttpURLConnection
+        c.connectTimeout = 12000; c.readTimeout = 15000
+        c.setRequestProperty("User-Agent", "AlaaTV/1.2 personal home launcher")
+        return try { require(c.responseCode in 200..299); c.inputStream.use { it.readBytes() } } finally { c.disconnect() }
+    }
+    private fun loadSeries(): List<Series> = runCatching {
+        val arr = JSONArray(prefs.getString("series", null) ?: return emptyList())
+        List(arr.length()) { i ->
+            val o = arr.getJSONObject(i)
+            val f = File(posterDir, o.getInt("id").toString() + ".jpg")
+            Series(o.getInt("id"), o.getString("title"), if (f.exists()) BitmapFactory.decodeFile(f.path) else null)
+        }
+    }.getOrDefault(emptyList())
+    fun cachedSeries(): List<Series> = loadSeries()
+    /** TVmaze (no key, CC BY-SA): highest-weight scripted English series airing today. Refreshed at most daily. */
+    suspend fun series(): List<Series> = withContext(Dispatchers.IO) {
+        val today = LocalDate.now(berlin).toString()
+        if (prefs.getString("series-date", null) == today) return@withContext loadSeries()
+        runCatching {
+            val picked = LinkedHashMap<Int, Pair<String, String>>()
+            val weights = HashMap<Int, Int>()
+            for (url in listOf("https://api.tvmaze.com/schedule/web?date=$today", "https://api.tvmaze.com/schedule?country=US&date=$today")) {
+                val eps = JSONArray(get(url))
+                for (i in 0 until eps.length()) {
+                    val show = eps.getJSONObject(i).optJSONObject("_embedded")?.optJSONObject("show") ?: eps.getJSONObject(i).optJSONObject("show") ?: continue
+                    val img = show.optJSONObject("image")?.optString("medium").orEmpty()
+                    if (show.optString("type") != "Scripted" || show.optString("language") != "English" || img.isEmpty()) continue
+                    val id = show.getInt("id")
+                    picked[id] = show.getString("name") to img.replace("http://", "https://")
+                    weights[id] = show.optInt("weight", 0)
+                }
+            }
+            val top = picked.keys.sortedByDescending { weights[it] }.take(5)
+            require(top.isNotEmpty())
+            posterDir.mkdirs()
+            val out = JSONArray()
+            for (id in top) {
+                File(posterDir, "$id.jpg").writeBytes(bytes(picked.getValue(id).second))
+                out.put(JSONObject().put("id", id).put("title", picked.getValue(id).first))
+            }
+            prefs.edit().putString("series", out.toString()).putString("series-date", today).apply()
+            posterDir.listFiles()?.filter { f -> top.none { f.name == "$it.jpg" } }?.forEach { it.delete() }
+            loadSeries()
+        }.getOrElse { loadSeries() }
+    }
 }
 fun weatherLabel(code: Int): String = when(code) {
     0 -> "سماء صافية"; 1, 2 -> "غائم جزئياً"; 3 -> "غائم"; 45, 48 -> "ضباب"
