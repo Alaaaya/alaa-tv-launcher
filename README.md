@@ -98,3 +98,21 @@ Poster cards open the app drawer, not an episode stream.
 
 Robolectric screenshots use explicitly named fixture shows without remote
 posters so UI tests remain deterministic and never misrepresent a live feed.
+
+## v1.3 webOS-inspired home
+
+New default `webOS` layout follows the supplied 24/25 home reference, without
+using LG branding or proprietary artwork. Discover and Classic remain selectable.
+The left rail provides profile/launcher settings, a local notification status,
+Android voice search, and settings. Five colored shortcuts resolve installed apps
+by label/package (or open the app drawer when unavailable); they do not deep-link
+into private movie/sports sections of third-party apps. Series cards open a viewing
+app, not guaranteed playback of the pictured title. APPS opens a vertical app list.
+TVmaze supplies daily English scripted picks ranked by weight, not viewership.
+Landscape background art is preferred when available and cached with poster
+fallbacks. Offline cached series and MAWAQIT calendar remain available.
+Only clock/date and MAWAQIT prayer widgets are shown. Focus uses TV Material scale
+and white outlines. 60fps is a target, not a measured guarantee on physical TV.
+Robolectric screenshots use genuine downloaded TVmaze images and fixture app names
+(no claim that those apps are actually installed on a TV). Test fixtures record
+source URLs in `app/src/test/resources/tvmaze/shows.json` (TVmaze CC BY-SA).

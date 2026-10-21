@@ -24,7 +24,7 @@ class DiscoverTest {
     @get:Rule val rule = createAndroidComposeRule<androidx.activity.ComponentActivity>()
     private val date=LocalDate.of(2026,10,21)
     private fun home() {
-        rule.activity.getSharedPreferences("appearance",0).edit().clear().commit()
+        rule.activity.getSharedPreferences("appearance",0).edit().clear().putString("theme","Discover").commit()
         val apps=listOf("Alaa Player","YouTube","Netflix","Shahid","Prime Video").mapIndexed { i,name -> InstalledApp("fixture.$i",name,Intent(),null) }
         rule.mainClock.autoAdvance=false
         rule.setContent {

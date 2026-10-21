@@ -64,7 +64,7 @@ fun LauncherHome(apps: List<InstalledApp>, today: PrayerDay?, tomorrow: PrayerDa
                  weather: Weather?, now: ZonedDateTime, series: List<Series> = emptyList()) {
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("appearance", Context.MODE_PRIVATE) }
-    var theme by remember { mutableStateOf(prefs.getString("theme", "Discover") ?: "Discover") }
+    var theme by remember { mutableStateOf(prefs.getString("theme", "webOS") ?: "webOS") }
     var appearance by remember { mutableStateOf(prefs.getString("appearance", "Auto") ?: "Auto") }
     var settings by remember { mutableStateOf(false) }
     val night = appearance == "Dark" || appearance == "Auto" && isNight(now)
@@ -75,6 +75,8 @@ fun LauncherHome(apps: List<InstalledApp>, today: PrayerDay?, tomorrow: PrayerDa
                     { appearance = it; prefs.edit().putString("appearance",it).apply() }, { settings = false })
             } else if (theme == "Classic") {
                 ClassicHome(apps,today,tomorrow,weather,now) { settings = true }
+            } else if (theme == "webOS") {
+                WebOsHome(apps,today,tomorrow,now,series) { settings = true }
             } else {
                 DiscoverHome(apps,today,tomorrow,weather,now,night,series) { settings = true }
             }
@@ -234,7 +236,7 @@ private fun DockApp(app: InstalledApp, modifier: Modifier, light: Boolean, click
 }
 
 @Composable
-private fun PrayerStrip(today: PrayerDay?, tomorrow: PrayerDay?, now: ZonedDateTime, ink: Color, dim: Color) {
+internal fun PrayerStrip(today: PrayerDay?, tomorrow: PrayerDay?, now: ZonedDateTime, ink: Color, dim: Color) {
     var elapsed by remember(now) { mutableLongStateOf(0L) }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     LaunchedEffect(now,lifecycle) {
@@ -293,8 +295,8 @@ private fun HomeSettings(theme: String, appearance: String, chooseTheme: (String
         Text("Home settings",color=Color.White,fontSize=30.sp,fontWeight=FontWeight.Bold)
         Text("Theme",color=Color(0xFFBDC2CE),fontSize=16.sp)
         Row(horizontalArrangement=Arrangement.spacedBy(16.dp)) {
-            listOf("Discover","Classic").forEachIndexed { i, name ->
-                ActionTile(Modifier.width(200.dp).height(55.dp).testTag("theme-$name").then(if(i==0) Modifier.focusRequester(first) else Modifier),onClick={chooseTheme(name)}) {
+            listOf("webOS","Discover","Classic").forEachIndexed { i, name ->
+                ActionTile(Modifier.width(190.dp).height(55.dp).testTag("theme-$name").then(if(i==0) Modifier.focusRequester(first) else Modifier),onClick={chooseTheme(name)}) {
                     Text("${if(theme==name) "✓  " else ""}$name",Modifier.align(Alignment.Center),color=Color.White)
                 }
             }

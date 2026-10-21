@@ -15,7 +15,7 @@ import org.json.JSONArray
 val berlin: ZoneId = ZoneId.of("Europe/Berlin")
 val prayerNames = listOf("الفجر", "الظهر", "العصر", "المغرب", "العشاء")
 data class PrayerDay(val date: LocalDate, val times: List<String>, val cached: Boolean)
-data class Series(val id: Int, val title: String, val poster: Bitmap?)
+data class Series(val id: Int, val title: String, val poster: Bitmap?, val backdrop: Bitmap? = poster)
 data class Weather(val temperature: Int, val code: Int, val updated: Long)
 
 object PrayerParser {
@@ -115,7 +115,8 @@ class LiveRepository(context: Context) {
         List(arr.length()) { i ->
             val o = arr.getJSONObject(i)
             val f = File(posterDir, o.getInt("id").toString() + ".jpg")
-            Series(o.getInt("id"), o.getString("title"), if (f.exists()) BitmapFactory.decodeFile(f.path) else null)
+            Series(o.getInt("id"), o.getString("title"), if (f.exists()) BitmapFactory.decodeFile(f.path) else null,
+                File(posterDir, "${o.getInt("id")}-wide.jpg").takeIf { it.exists() }?.let { BitmapFactory.decodeFile(it.path) } ?: if (f.exists()) BitmapFactory.decodeFile(f.path) else null)
         }
     }.getOrDefault(emptyList())
     fun cachedSeries(): List<Series> = loadSeries()
@@ -143,10 +144,16 @@ class LiveRepository(context: Context) {
             val out = JSONArray()
             for (id in top) {
                 File(posterDir, "$id.jpg").writeBytes(bytes(picked.getValue(id).second))
+                runCatching {
+                    val images = JSONArray(get("https://api.tvmaze.com/shows/$id/images"))
+                    val wide = (0 until images.length()).map { images.getJSONObject(it) }.firstOrNull { it.optString("type") == "background" }
+                    val url = wide?.getJSONObject("resolutions")?.optJSONObject("original")?.optString("url")
+                    if (!url.isNullOrEmpty() && url.startsWith("https://static.tvmaze.com/")) File(posterDir,"$id-wide.jpg").writeBytes(bytes(url))
+                }
                 out.put(JSONObject().put("id", id).put("title", picked.getValue(id).first))
             }
             prefs.edit().putString("series", out.toString()).putString("series-date", today).apply()
-            posterDir.listFiles()?.filter { f -> top.none { f.name == "$it.jpg" } }?.forEach { it.delete() }
+            posterDir.listFiles()?.filter { f -> top.none { f.name == "$it.jpg" || f.name == "$it-wide.jpg" } }?.forEach { it.delete() }
             loadSeries()
         }.getOrElse { loadSeries() }
     }
