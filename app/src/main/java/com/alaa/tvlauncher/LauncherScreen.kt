@@ -82,9 +82,9 @@ private fun Tile(modifier: Modifier = Modifier, onClick: () -> Unit, content: @C
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun LauncherHome(
+fun ClassicHome(
     apps: List<InstalledApp>, today: PrayerDay?, tomorrow: PrayerDay?,
-    weather: Weather?, match: Match?, now: ZonedDateTime
+    weather: Weather?, match: Match?, now: ZonedDateTime, onSettings: () -> Unit = {}
 ) {
     val context = LocalContext.current
     var allApps by remember { mutableStateOf(false) }
@@ -109,7 +109,7 @@ fun LauncherHome(
                         Spacer(Modifier.weight(1f))
                         Tile(Modifier.size(34.dp), { search = ""; allApps = true }) { Text("⌕", Modifier.align(Alignment.Center), fontSize = 26.sp) }
                         Spacer(Modifier.width(14.dp))
-                        Tile(Modifier.size(34.dp), { openSafely(context, Intent(Settings.ACTION_SETTINGS)) }) { Text("⚙", Modifier.align(Alignment.Center), fontSize = 22.sp) }
+                        Tile(Modifier.size(34.dp), { onSettings() }) { Text("⚙", Modifier.align(Alignment.Center), fontSize = 22.sp) }
                         Spacer(Modifier.width(20.dp))
                         Text(now.format(DateTimeFormatter.ofPattern("HH:mm")), color = Color.White, fontSize = 21.sp, fontWeight = FontWeight.Medium)
                     }

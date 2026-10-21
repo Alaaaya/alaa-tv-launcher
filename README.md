@@ -20,7 +20,7 @@ Use Java 17 and Android SDK 36. Create local.properties with your sdk.dir, then 
 ./gradlew :app:assembleDebug :app:testDebugUnitTest --no-daemon
 ```
 
-APK is app/build/outputs/apk/debug/app-debug.apk. The package is com.alaa.tvlauncher, version 1.0.
+APK is app/build/outputs/apk/debug/app-debug.apk. The package is com.alaa.tvlauncher, version 1.1.
 
 ## Install and choose Home
 
@@ -35,3 +35,16 @@ Robolectric native-graphics UI capture uses clearly labeled fixture installed ap
 ## Known limitations
 
 No physical TV installation or remote-control test yet. The hero currently uses one bundled landscape and three rotating captions. No HDMI/tuner integration. App icon appearance depends on the actual installed packages. Manufacturer-specific Home selection cannot be guaranteed. Match coverage depends on the public API and can be absent. Mosque page structure may change and require a parser update.
+
+
+## v1.1 Discover theme
+
+The default home now follows the owner's Free My TV reference: a soft off-white day palette, charcoal night palette, Explore / Movies / Shows tabs, a wide landscape card beside two portrait art cards, a compact live prayer strip, small weather/clock and a wide app-banner dock. Settings offers **Discover** and the original **Classic** theme. Both theme and Discover appearance (Auto, Light, Dark) persist locally. Auto uses approximate NOAA solar elevation at the Mülheim mosque coordinates and works offline. No blur is used.
+
+Artwork is explicitly labeled **sample art**. Tabs change bundled artwork/title collections, not real film/series catalogs. All three artwork cards open the app drawer, not a fictional video or unavailable stream. There is no TMDB key and no live recommendation service. The two portrait illustrations are drawn locally and the landscape is the original bundled art.
+
+The dock loads actual installed TV activity/application banners, with installed icons as fallback, and text only if neither can be loaded. Only installed launchable apps are shown; Alaa Player is first when installed. Screenshot tests use fixture app names without installed binaries, so their tiles are text, not evidence of the owner's installed apps. The live MAWAQIT repository/countdown and weather cache behavior are unchanged. Classic retains the original match card.
+
+Design inspiration: [Free My TV](https://github.com/simbasjungles/free-my-tv), MIT, reviewed HomeView.java's title/tab/card/shelf composition. This release uses an original Compose implementation, does not copy the upstream Canvas renderer or include its ADB/debloat/privileged package-disabling code.
+
+Seven automated Robolectric tests cover prayer parsing/DST, Classic drawer remote navigation, Discover screenshots, tab selection, D-pad drawer opening/closing, switching Classic and back from Settings, saved appearance, and solar day/night across seasons and zones. Screenshots are rendered Android views at 1920x1080 using fixture prayers/weather/apps. Physical-TV performance and manufacturer Home selection remain untested. Debug signing matches v1.0 for in-place updates on the same installation.

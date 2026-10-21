@@ -11,7 +11,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.asImageBitmap
 
-data class InstalledApp(val packageName: String, val label: String, val intent: Intent, val icon: androidx.compose.ui.graphics.ImageBitmap?)
+data class InstalledApp(val packageName: String, val label: String, val intent: Intent, val icon: androidx.compose.ui.graphics.ImageBitmap?, val banner: androidx.compose.ui.graphics.ImageBitmap? = null)
 
 class LauncherActivity : ComponentActivity() {
     private val revision = mutableIntStateOf(0)
@@ -42,11 +42,15 @@ fun loadApps(context: Context): List<InstalledApp> {
     }
     return apps.sortedWith(compareBy<ResolveInfo> { rank(it) }.thenBy { it.loadLabel(pm).toString() }).map { info ->
         val drawable = info.loadIcon(pm)
+        val banner = runCatching {
+            val art = info.activityInfo.loadBanner(pm) ?: pm.getApplicationBanner(info.activityInfo.packageName)
+            art?.let { Bitmap.createBitmap(320,180,Bitmap.Config.ARGB_8888).also { b -> art.setBounds(0,0,320,180); art.draw(Canvas(b)) }.asImageBitmap() }
+        }.getOrNull()
         val bitmap = runCatching {
             Bitmap.createBitmap(128,128,Bitmap.Config.ARGB_8888).also { b -> drawable.setBounds(0,0,128,128); drawable.draw(Canvas(b)) }.asImageBitmap()
         }.getOrNull()
         InstalledApp(info.activityInfo.packageName, info.loadLabel(pm).toString(),
-            Intent(Intent.ACTION_MAIN).setComponent(ComponentName(info.activityInfo.packageName, info.activityInfo.name)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), bitmap)
+            Intent(Intent.ACTION_MAIN).setComponent(ComponentName(info.activityInfo.packageName, info.activityInfo.name)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), bitmap, banner)
     }
 }
 fun openSafely(context: Context, intent: Intent) {
