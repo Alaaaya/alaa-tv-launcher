@@ -56,6 +56,7 @@ internal fun PrayerCalendarPanel(today: PrayerDay?,tomorrow: PrayerDay?,now: Zon
     }
     val tick=now.plusSeconds(elapsed)
     val date=tick.toLocalDate()
+    val hijri=remember(date) { HijrahDate.from(date) }
     val valid=today?.takeIf { it.date==date }
     val next=PrayerParser.next(valid,tomorrow,tick)
     val seconds=next?.let { Duration.between(tick,it.second).seconds.coerceAtLeast(0) }
@@ -83,11 +84,23 @@ internal fun PrayerCalendarPanel(today: PrayerDay?,tomorrow: PrayerDay?,now: Zon
                 }
             }
             Row(Modifier.fillMaxWidth().height(100.dp),horizontalArrangement=Arrangement.spacedBy(10.dp)) {
+                GlassCell(Modifier.weight(1f).fillMaxHeight().testTag("hijri-date")) {
+                    Text("التقويم الهجري",color=Color(0xFFD4E1E6),fontSize=11.sp)
+                    Text("${hijri.get(ChronoField.DAY_OF_MONTH)}",color=Color.White,fontSize=28.sp,fontWeight=FontWeight.Bold)
+                    Text("${hijriMonths[hijri.get(ChronoField.MONTH_OF_YEAR)-1]} ${hijri.get(ChronoField.YEAR)} هـ",color=Color.White,fontSize=12.sp)
+                    Text(weekDays[date.dayOfWeek.value-1],color=Color(0xFFD4E1E6),fontSize=10.sp)
+                }
                 GlassCell(Modifier.weight(1f).fillMaxHeight().testTag("gregorian-date")) {
                     Text("التقويم الميلادي",color=Color(0xFFD4E1E6),fontSize=11.sp)
                     Text("${date.dayOfMonth}",color=Color.White,fontSize=28.sp,fontWeight=FontWeight.Bold)
                     Text("${gregMonths[date.monthValue-1]} ${date.year}",color=Color.White,fontSize=12.sp)
                     Text(weekDays[date.dayOfWeek.value-1],color=Color(0xFFD4E1E6),fontSize=10.sp)
+                }
+
+                GlassCell(Modifier.weight(1.4f).fillMaxHeight().testTag("ramadan-countdown")) {
+                    Text("☾  باقي على رمضان",color=Color.White,fontSize=16.sp)
+                    Text("${ramadanDays(date)} أيام",color=Color.White,fontSize=28.sp,fontWeight=FontWeight.Bold)
+                    Text("تقويم أم القرى · حسب رؤية الهلال",color=Color(0xFFD4E1E6),fontSize=10.sp)
                 }
 
             }
