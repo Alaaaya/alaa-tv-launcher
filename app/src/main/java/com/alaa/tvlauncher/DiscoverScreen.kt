@@ -105,19 +105,11 @@ private fun ActionTile(modifier: Modifier = Modifier, light: Boolean = false,
 
 // Only the bundled static wallpaper layer is blurred. Foreground text and logos
 // remain sharp, and focus transforms reuse the layer instead of resampling content.
-internal fun glassBlurSupported(sdk: Int) = sdk >= 31
+internal fun glassBlurSupported(sdk: Int) = false // Lite never creates RenderEffect layers.
 
 @Composable
 private fun BoxScope.FrostedLayer(light: Boolean) {
-    if (glassBlurSupported(Build.VERSION.SDK_INT)) {
-        Image(painterResource(R.drawable.hero), null,
-            Modifier.matchParentSize().blur(18.dp), contentScale=ContentScale.Crop)
-    }
-    val wash = remember(light) { Brush.verticalGradient(
-        if(light) listOf(Color(0xDBF8FAFF),Color(0xA8CFD9E7))
-        else listOf(Color(0xD0354057),Color(0xDF151C2B))) }
-    Box(Modifier.matchParentSize().background(wash))
-    GlassSheenAndRim()
+    Box(Modifier.matchParentSize().background(if(light) Color(0xE8E1E7EF) else Color(0xEC202B40)))
 }
 
 // Adapted from Glass.java's independent sheen/rim layers (Glass TV Home, MIT).
@@ -125,18 +117,14 @@ private fun BoxScope.FrostedLayer(light: Boolean) {
 // Brushes are cached, and this overlay has no pointer/focus handlers.
 @Composable
 private fun BoxScope.GlassSheenAndRim() {
-    val sheen = remember { Brush.verticalGradient(listOf(Color(0x22FFFFFF), Color.Transparent)) }
-    val rim = remember { Brush.linearGradient(
-        listOf(Color(0xC0FFFFFF),Color(0x26FFFFFF),Color(0x59FFFFFF))) }
-    Box(Modifier.matchParentSize().background(sheen,RoundedCornerShape(14.dp))
-        .border(1.dp,rim,RoundedCornerShape(14.dp)))
+    // Lite: flat panels, no sheen or extra compositing layers.
 }
 
 @Composable
 private fun DiscoverHome(apps: List<InstalledApp>, today: PrayerDay?, tomorrow: PrayerDay?,
                          weather: Weather?, now: ZonedDateTime, night: Boolean, series: List<Series>, settings: () -> Unit) {
     val context = LocalContext.current
-    val background = animateColorAsState(if(night) Color(0xC5101725) else Color(0xA8EDF0F3), tween(1500), label="day-night")
+    val background = if(night) Color(0xC5101725) else Color(0xA8EDF0F3)
     val ink = if(night) Color(0xFFF5F5F7) else Color(0xFF202126)
     val dim = if(night) Color(0xFFB4B6C3) else Color(0xFF626570)
     val dockApps = remember(apps) { apps.take(16) }
@@ -146,8 +134,8 @@ private fun DiscoverHome(apps: List<InstalledApp>, today: PrayerDay?, tomorrow: 
     LaunchedEffect(drawer, apps) { delay(150); runCatching { if(drawer) close.requestFocus() else first.requestFocus() } }
     BackHandler { if(drawer) drawer = false }
     Box(Modifier.fillMaxSize()) {
-    Image(painterResource(R.drawable.hero),null,Modifier.fillMaxSize(),contentScale=ContentScale.Crop)
-    Box(Modifier.fillMaxSize().drawBehind { drawRect(background.value) })
+    LiteResourceImage(R.drawable.hero,Modifier.fillMaxSize())
+    Box(Modifier.fillMaxSize().drawBehind { drawRect(background) })
     Column(Modifier.fillMaxSize().padding(horizontal=75.dp, vertical=18.dp), verticalArrangement=Arrangement.spacedBy(12.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment=Alignment.CenterVertically) {
             Column {

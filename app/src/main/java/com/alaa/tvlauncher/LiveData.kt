@@ -112,11 +112,13 @@ class LiveRepository(context: Context) {
     }
     private fun loadSeries(): List<Series> = runCatching {
         val arr = JSONArray(prefs.getString("series", null) ?: return emptyList())
-        List(arr.length()) { i ->
+        List(arr.length().coerceAtMost(5)) { i ->
             val o = arr.getJSONObject(i)
             val f = File(posterDir, o.getInt("id").toString() + ".jpg")
-            Series(o.getInt("id"), o.getString("title"), if (f.exists()) BitmapFactory.decodeFile(f.path) else null,
-                File(posterDir, "${o.getInt("id")}-wide.jpg").takeIf { it.exists() }?.let { BitmapFactory.decodeFile(it.path) } ?: if (f.exists()) BitmapFactory.decodeFile(f.path) else null)
+            val poster = if (f.exists()) LiteBitmaps.file(f, 240, 360) else null
+            val wide = File(posterDir, "${o.getInt("id")}-wide.jpg")
+            Series(o.getInt("id"), o.getString("title"), poster,
+                if (wide.exists()) LiteBitmaps.file(wide, 960, 540) ?: poster else poster)
         }
     }.getOrDefault(emptyList())
     fun cachedSeries(): List<Series> = loadSeries()

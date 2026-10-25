@@ -2,3 +2,6 @@
 HSPLcom/alaa/tvlauncher/LauncherActivity;->onCreate(Landroid/os/Bundle;)V
 HSPLcom/alaa/tvlauncher/DiscoverScreenKt;->**(**)**
 HSPLcom/alaa/tvlauncher/LauncherScreenKt;->**(**)**
+
+HSPLcom/alaa/tvlauncher/WebOsScreenKt;->**(**)**
+HSPLcom/alaa/tvlauncher/PrayerPageKt;->**(**)**

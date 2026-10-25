@@ -23,7 +23,7 @@ internal fun PrayerPage(today: PrayerDay?,tomorrow: PrayerDay?,now: ZonedDateTim
     LaunchedEffect(Unit) { back.requestFocus() }
     BackHandler(onBack=onBack)
     Box(Modifier.fillMaxSize().testTag("prayer-page")) {
-        Image(painterResource(R.drawable.prayer_wallpaper),null,Modifier.fillMaxSize(),contentScale=ContentScale.Crop)
+        LiteResourceImage(R.drawable.prayer_wallpaper,Modifier.fillMaxSize())
         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0x15091932),Color(0x25091932)))))
         Row(Modifier.fillMaxSize()) {
             Column(Modifier.width(88.dp).fillMaxHeight().background(Color(0xBF0D1E42)).padding(horizontal=12.dp,vertical=24.dp),

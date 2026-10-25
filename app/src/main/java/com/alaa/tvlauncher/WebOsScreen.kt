@@ -38,8 +38,7 @@ internal fun WebTile(modifier: Modifier, color: Color = Color(0xFF292B30), click
     Surface(onClick=click,modifier=modifier,
         shape=ClickableSurfaceDefaults.shape(RoundedCornerShape(12.dp)),
         colors=ClickableSurfaceDefaults.colors(containerColor=color,focusedContainerColor=color,contentColor=Color.White,focusedContentColor=Color.White),
-        scale=ClickableSurfaceDefaults.scale(focusedScale=1.07f),
-        glow=ClickableSurfaceDefaults.glow(focusedGlow=Glow(Color(0xFF00DFFF),12.dp)),
+        scale=ClickableSurfaceDefaults.scale(focusedScale=1.035f),
         border=ClickableSurfaceDefaults.border(focusedBorder=Border(BorderStroke(2.dp,Color.White)))) {
         Box(Modifier.fillMaxSize(),content=content)
     }
@@ -143,18 +142,12 @@ fun WebOsHome(apps: List<InstalledApp>, today: PrayerDay?, tomorrow: PrayerDay?,
 @Composable
 private fun SeriesArt(show: Series?, modifier: Modifier) {
     if(show?.backdrop!=null) Image(remember(show.backdrop){show.backdrop.asImageBitmap()},show.title,modifier,contentScale=ContentScale.Crop)
-    else Image(painterResource(R.drawable.hero),null,modifier,contentScale=ContentScale.Crop)
+    else LiteResourceImage(R.drawable.hero,modifier)
 }
 
 @Composable
 private fun WebHero(series: List<Series>,today: PrayerDay?,tomorrow: PrayerDay?,now: ZonedDateTime,modifier: Modifier,click:()->Unit) {
-    var page by remember(series) { mutableIntStateOf(0) }
-    val lifecycle=LocalLifecycleOwner.current.lifecycle
-    LaunchedEffect(series,lifecycle) {
-        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-            while(isActive) { delay(12000); if(series.isNotEmpty()) page=(page+1)%series.size }
-        }
-    }
+    val page = 0 // Lite: static hero, no background carousel timer.
     val show=series.getOrNull(page)
     Box(modifier.clip(RoundedCornerShape(18.dp)).testTag("webos-hero")) {
         SeriesArt(show,Modifier.fillMaxSize())

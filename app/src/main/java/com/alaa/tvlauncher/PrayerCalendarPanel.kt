@@ -49,7 +49,7 @@ internal fun ramadanDays(date: LocalDate): Long {
 @Composable
 private fun GlassCell(modifier: Modifier,active: Boolean=false, content: @Composable ColumnScope.()->Unit) {
     Column(modifier.background(
-        Brush.verticalGradient(if(active) listOf(Color(0xE842C590),Color(0xDB18784F)) else listOf(Color(0x594D6C8A),Color(0x55455069))),
+        if(active) Color(0xE827956A) else Color(0xC140536C),
         RoundedCornerShape(14.dp))
         .border(1.dp,if(active) Color(0xFF90FFD2) else Color.White.copy(alpha=.22f),RoundedCornerShape(14.dp))
         .padding(10.dp),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center,content=content)
@@ -67,12 +67,13 @@ internal fun PrayerCalendarPanel(today: PrayerDay?,tomorrow: PrayerDay?,now: Zon
     val tick=now.plusSeconds(elapsed)
     val date=tick.toLocalDate()
     val hijri=remember(date) { hijriParts(date) }
+    val ramadan=remember(date) { ramadanDays(date) }
     val valid=today?.takeIf { it.date==date }
     val next=PrayerParser.next(valid,tomorrow,tick)
     val seconds=next?.let { Duration.between(tick,it.second).seconds.coerceAtLeast(0) }
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
         Column(Modifier.fillMaxWidth().testTag("prayer-glass")
-            .background(Brush.linearGradient(listOf(Color(0x73394763),Color(0x7A31405B))),RoundedCornerShape(22.dp))
+            .background(Color(0xCF34415A),RoundedCornerShape(22.dp))
             .border(1.dp,Color.White.copy(alpha=.2f),RoundedCornerShape(22.dp)).padding(14.dp),
             verticalArrangement=Arrangement.spacedBy(10.dp)) {
             Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween) {
@@ -114,7 +115,7 @@ internal fun PrayerCalendarPanel(today: PrayerDay?,tomorrow: PrayerDay?,now: Zon
 
                 GlassCell(Modifier.weight(1f).fillMaxHeight().testTag("ramadan-countdown")) {
                     Text("☾  باقي على رمضان",color=Color(0xFFFFD884),fontSize=17.sp)
-                    Text("${ramadanDays(date)} أيام",color=Color.White,fontSize=28.sp,fontWeight=FontWeight.Bold)
+                    Text("${ramadan} أيام",color=Color.White,fontSize=28.sp,fontWeight=FontWeight.Bold)
                     Text("تقويم أم القرى · حسب رؤية الهلال",color=Color(0xFFD4E1E6),fontSize=10.sp)
                 }
 

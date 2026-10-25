@@ -56,8 +56,8 @@ class DiscoverTest {
     @Test fun glassApiGate() {
         assertFalse(glassBlurSupported(22))
         assertFalse(glassBlurSupported(30))
-        assertTrue(glassBlurSupported(31))
-        assertTrue(glassBlurSupported(36))
+        assertFalse(glassBlurSupported(31))
+        assertFalse(glassBlurSupported(36))
     }
     @Test fun solarDayNightTracksSeasonsAndTimezone() {
         assertFalse(isNight(date.atTime(12,0).atZone(berlin)))

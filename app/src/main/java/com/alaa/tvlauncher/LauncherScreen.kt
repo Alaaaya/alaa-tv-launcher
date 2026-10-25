@@ -45,16 +45,16 @@ fun LauncherScreen(revision: Int) {
     val context = LocalContext.current
     val repo = remember(context) { LiveRepository(context) }
     var apps by remember { mutableStateOf(emptyList<InstalledApp>()) }
-    val cached = remember(repo) { repo.cachedPrayers() }
-    var today by remember { mutableStateOf(cached.first) }
-    var tomorrow by remember { mutableStateOf(cached.second) }
-    var weather by remember { mutableStateOf(repo.cachedWeather()) }
+    var today by remember { mutableStateOf<PrayerDay?>(null) }
+    var tomorrow by remember { mutableStateOf<PrayerDay?>(null) }
+    val weather: Weather? = null
     var series by remember { mutableStateOf(emptyList<Series>()) }
     var now by remember { mutableStateOf(ZonedDateTime.now(berlin)) }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     LaunchedEffect(revision, lifecycle) {
       lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
         apps = withContext(Dispatchers.IO) { loadApps(context) }
+        val saved = withContext(Dispatchers.IO) { repo.cachedPrayers() }; today = saved.first; tomorrow = saved.second
         launch { while (isActive) { now = ZonedDateTime.now(berlin); delay(60_000 - System.currentTimeMillis() % 60_000) } }
         launch {
             while (isActive) {
@@ -63,7 +63,7 @@ fun LauncherScreen(revision: Int) {
             }
         }
         launch { series = withContext(Dispatchers.IO) { repo.cachedSeries() }; while (isActive) { series = repo.series(); delay(6 * 60 * 60 * 1000L) } }
-        launch { while (isActive) { weather = repo.weather(); delay(15 * 60 * 1000L) } }
+
       }
     }
     LauncherHome(apps, today, tomorrow, weather, now, series)
@@ -92,7 +92,7 @@ fun ClassicHome(
     val first = remember { FocusRequester() }
     val closeFocus = remember { FocusRequester() }
     var hero by remember { mutableIntStateOf(0) }
-    LaunchedEffect(Unit) { while (isActive) { delay(16000); hero = (hero + 1) % 3 } }
+
     LaunchedEffect(apps, allApps) { delay(150); runCatching { if (allApps) closeFocus.requestFocus() else first.requestFocus() } }
     BackHandler { if (allApps) { allApps = false; search = "" } }
     MaterialTheme {
@@ -114,11 +114,11 @@ fun ClassicHome(
                         Text(now.format(DateTimeFormatter.ofPattern("HH:mm")), color = Color.White, fontSize = 21.sp, fontWeight = FontWeight.Medium)
                     }
                     Box(Modifier.fillMaxWidth().weight(1f).clip(Shape)) {
-                        Image(painterResource(R.drawable.hero), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                        LiteResourceImage(R.drawable.hero, Modifier.fillMaxSize())
                         Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(Color(0xEB050C14), Color(0x60050C14), Color.Transparent))))
                         Column(Modifier.align(Alignment.CenterStart).padding(24.dp).widthIn(max = 410.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Text("ALAA TV  /  YOUR HOME", fontSize = 11.sp, color = Gold, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
-                            AnimatedContent(hero, label = "hero") { page ->
+                            run { val page = 0
                                 Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
                                     Text(listOf("عالمك على شاشة واحدة", "وقتك… إلك", "كل اللي بتحبّه، هون")[page], fontSize = 30.sp, color = Color.White, fontWeight = FontWeight.Bold)
                                     Text(listOf("تطبيقاتك المفضلة ومواقيت الصلاة", "افتح تطبيقك المفضل واستمتع بوقتك", "بداية بسيطة لكل سهرة حلوة")[page], fontSize = 13.sp, color = Color(0xFFE0E3E9))
@@ -170,7 +170,7 @@ fun ClassicHome(
                             modifier = Modifier.fillMaxWidth().background(Color(0xFF202735), Shape).padding(16.dp),
                             decorationBox = { inner -> Box { if (search.isEmpty()) Text("ابحث عن تطبيق…", color = Muted, fontSize = 18.sp); inner() } })
                         Spacer(Modifier.height(20.dp))
-                        val filtered = apps.filter { it.label.contains(search, true) }
+                        val filtered = remember(apps, search) { apps.filter { it.label.contains(search, true) } }
                         if (filtered.isEmpty()) Text("ما في تطبيقات مطابقة", color = Muted)
                         LazyVerticalGrid(columns = GridCells.Adaptive(115.dp), contentPadding = PaddingValues(6.dp), verticalArrangement = Arrangement.spacedBy(20.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                             items(filtered, key = { it.packageName }, contentType = { "app" }) { app ->
