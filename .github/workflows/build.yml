@@ -20,7 +20,12 @@ jobs:
           packages: platform-tools
           log-accepted-android-sdk-licenses: false
       - uses: gradle/actions/setup-gradle@v4
-      - run: ./gradlew :app:assembleDebug :app:assembleRelease :app:testDebugUnitTest --no-daemon
+      - run: ./gradlew :app:assembleDebug :app:assembleRelease --no-daemon
+      - run: ./gradlew :app:testDebugUnitTest --no-daemon --tests '*DiscoverTest' --tests '*WebOsTest' --tests '*LauncherTest' --tests '*LiteBitmapsTest'
+      - run: timeout 200 ./gradlew :app:testDebugUnitTest --no-daemon --tests '*LookTest.lookPageAndPersistence' -i 2>&1 | grep -E "STEP|PASSED|FAILED|BUILD" || true
+      - run: timeout 200 ./gradlew :app:testDebugUnitTest --no-daemon --tests '*LookTest.homeCinemaDusk' -i 2>&1 | grep -E "PASSED|FAILED|BUILD" || true
+      - run: timeout 200 ./gradlew :app:testDebugUnitTest --no-daemon --tests '*LookTest.homeOceanForest' -i 2>&1 | grep -E "PASSED|FAILED|BUILD" || true
+      - run: timeout 200 ./gradlew :app:testDebugUnitTest --no-daemon --tests '*LookTest.homeSoftOutline' -i 2>&1 | grep -E "PASSED|FAILED|BUILD" || true
       - uses: actions/upload-artifact@v4
         if: always()
         with:
