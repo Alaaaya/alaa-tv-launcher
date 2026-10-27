@@ -39,6 +39,7 @@ class LookTest {
         }
     }
     @Test fun defaultsPersistenceRemoteAndStyles() {
+        Thread { Thread.sleep(150000); Thread.getAllStackTraces().forEach { (th,st)-> if(th.name.contains("main",true)||th.name.contains("Test",true)) { System.err.println("DUMP "+th.name); st.take(40).forEach{ System.err.println("DUMP   at "+it) } } }; System.err.flush() }.apply{isDaemon=true}.start()
         val prefs=rule.activity.getSharedPreferences("appearance",0)
         prefs.edit().clear().commit()
         assertEquals(LookOptions(),LookOptions.read(prefs))
