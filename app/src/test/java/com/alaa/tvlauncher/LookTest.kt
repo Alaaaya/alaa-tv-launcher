@@ -26,7 +26,7 @@ class LookTest {
         rule.onNodeWithTag(tag).performScrollTo()
         rule.onNodeWithTag(tag).performSemanticsAction(SemanticsActions.RequestFocus) { it() }
         rule.onNodeWithTag(tag).performKeyInput { keyDown(Key.DirectionCenter); keyUp(Key.DirectionCenter) }
-        rule.mainClock.advanceTimeBy(1000)
+        rule.mainClock.advanceTimeBy(2000)
     }
     private fun capture(name:String) {
         rule.waitForIdle()
@@ -47,7 +47,7 @@ class LookTest {
         rule.setContent { LauncherHome(apps,null,null,null,LocalDate.of(2026,10,27).atTime(20,0).atZone(berlin)) }
         rule.mainClock.advanceTimeBy(2000)
         capture("look20-original")
-        rule.onNodeWithTag("home-settings").performClick()
+        press("home-settings")
         rule.mainClock.advanceTimeBy(1000)
         press("open-look")
         rule.onNodeWithTag("look-page").assertExists()
@@ -56,15 +56,15 @@ class LookTest {
         assertEquals(LookOptions("dusk","cinema",6,"bold"),LookOptions.read(prefs))
         press("look-close"); press("settings-close")
         capture("look20-cinema")
-        rule.onNodeWithTag("all-apps").performClick(); rule.mainClock.advanceTimeBy(1000)
+        press("all-apps"); rule.mainClock.advanceTimeBy(1000)
         rule.onNodeWithTag("drawer-fixture.1").assertExists()
         capture("look20-apps-six")
-        rule.onNodeWithTag("drawer-close").performClick(); rule.mainClock.advanceTimeBy(1000)
-        rule.onNodeWithTag("home-settings").performClick(); rule.mainClock.advanceTimeBy(1000)
+        press("drawer-close"); rule.mainClock.advanceTimeBy(1000)
+        press("home-settings"); rule.mainClock.advanceTimeBy(1000)
         press("open-look"); press("style-ocean"); press("wallpaper-forest"); press("focus-fill")
         press("look-close"); press("settings-close")
         capture("look20-ocean")
-        rule.onNodeWithTag("home-settings").performClick(); rule.mainClock.advanceTimeBy(1000)
+        press("home-settings"); rule.mainClock.advanceTimeBy(1000)
         press("open-look"); press("look-reset")
         assertEquals(LookOptions(),LookOptions.read(prefs))
         rule.runOnUiThread { rule.activity.onBackPressedDispatcher.onBackPressed() }
