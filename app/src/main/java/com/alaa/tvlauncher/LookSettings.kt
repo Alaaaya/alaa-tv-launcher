@@ -63,11 +63,14 @@ internal fun LookWallpaper(modifier: Modifier, original: @Composable ()->Unit) {
     if(choice == "original") original()
     else {
         val selected = if(choice=="rotate") listOf("mountain","dusk","forest")[page] else choice
-        LiteResourceImage(when(selected) {
-            "dusk" -> R.drawable.look_dusk
-            "forest" -> R.drawable.look_forest
-            else -> R.drawable.hero
-        },modifier)
+        Box(modifier) {
+            LiteResourceImage(when(selected) {
+                "dusk" -> R.drawable.look_dusk
+                "forest" -> R.drawable.look_forest
+                else -> R.drawable.hero
+            },Modifier.matchParentSize())
+            Box(Modifier.matchParentSize().background(Color(0x66000000)))
+        }
     }
 }
 
