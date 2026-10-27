@@ -71,12 +71,13 @@ fun LauncherScreen(revision: Int) {
 
 @Composable
 private fun Tile(modifier: Modifier = Modifier, onClick: () -> Unit, content: @Composable BoxScope.() -> Unit) {
+    val look = LocalLook.current
     Surface(
         onClick = onClick, modifier = modifier,
         shape = ClickableSurfaceDefaults.shape(shape = Shape),
-        colors = ClickableSurfaceDefaults.colors(containerColor = Color(0xFF1B1F27), focusedContainerColor = Color(0xFF242B38), contentColor = Color.White, focusedContentColor = Color.White),
-        scale = ClickableSurfaceDefaults.scale(focusedScale = 1.035f),
-        border = ClickableSurfaceDefaults.border(focusedBorder = Border(BorderStroke(2.dp, Color.White)))
+        colors = ClickableSurfaceDefaults.colors(containerColor = Color(0xFF1B1F27), focusedContainerColor = if(look.focus=="fill") look.palette.accent.copy(alpha=.4f) else Color(0xFF242B38), contentColor = Color.White, focusedContentColor = Color.White),
+        scale = ClickableSurfaceDefaults.scale(focusedScale = if(look.focus=="outline") 1f else 1.035f),
+        border = ClickableSurfaceDefaults.border(focusedBorder = Border(BorderStroke(if(look.focus=="bold") 4.dp else 2.dp, if(look.style=="original") Color.White else look.palette.accent)))
     ) { Box(Modifier.fillMaxSize(), content = content) }
 }
 
@@ -114,7 +115,7 @@ fun ClassicHome(
                         Text(now.format(DateTimeFormatter.ofPattern("HH:mm")), color = Color.White, fontSize = 21.sp, fontWeight = FontWeight.Medium)
                     }
                     Box(Modifier.fillMaxWidth().weight(1f).clip(Shape)) {
-                        LiteResourceImage(R.drawable.hero, Modifier.fillMaxSize())
+                        LookWallpaper(Modifier.fillMaxSize()) { LiteResourceImage(R.drawable.hero, Modifier.fillMaxSize()) }
                         Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(Color(0xEB050C14), Color(0x60050C14), Color.Transparent))))
                         Column(Modifier.align(Alignment.CenterStart).padding(24.dp).widthIn(max = 410.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Text("ALAA TV  /  YOUR HOME", fontSize = 11.sp, color = Gold, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
@@ -172,7 +173,7 @@ fun ClassicHome(
                         Spacer(Modifier.height(20.dp))
                         val filtered = remember(apps, search) { apps.filter { it.label.contains(search, true) } }
                         if (filtered.isEmpty()) Text("ما في تطبيقات مطابقة", color = Muted)
-                        LazyVerticalGrid(columns = GridCells.Adaptive(115.dp), contentPadding = PaddingValues(6.dp), verticalArrangement = Arrangement.spacedBy(20.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                        LazyVerticalGrid(columns = if(LocalLook.current.columns==0) GridCells.Adaptive(115.dp) else GridCells.Fixed(LocalLook.current.columns), contentPadding = PaddingValues(6.dp), verticalArrangement = Arrangement.spacedBy(20.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                             items(filtered, key = { it.packageName }, contentType = { "app" }) { app ->
                                 AppTile(app) { openSafely(context, app.intent) }
                             }

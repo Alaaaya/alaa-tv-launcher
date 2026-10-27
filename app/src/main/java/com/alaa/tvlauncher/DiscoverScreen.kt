@@ -67,12 +67,17 @@ fun LauncherHome(apps: List<InstalledApp>, today: PrayerDay?, tomorrow: PrayerDa
     var theme by remember { mutableStateOf(prefs.getString("theme", "webOS") ?: "webOS") }
     var appearance by remember { mutableStateOf(prefs.getString("appearance", "Auto") ?: "Auto") }
     var settings by remember { mutableStateOf(false) }
+    var lookPage by remember { mutableStateOf(false) }
+    var look by remember { mutableStateOf(LookOptions.read(prefs)) }
+    val updateLook: (LookOptions)->Unit = { look = it; it.save(prefs) }
     val night = appearance == "Dark" || appearance == "Auto" && isNight(now)
     MaterialTheme {
-        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-            if (settings) {
+        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr, LocalLook provides look) {
+            if (lookPage) {
+                LookSettings(look, updateLook) { lookPage = false }
+            } else if (settings) {
                 HomeSettings(theme, appearance, { theme = it; prefs.edit().putString("theme",it).apply() },
-                    { appearance = it; prefs.edit().putString("appearance",it).apply() }, { settings = false })
+                    { appearance = it; prefs.edit().putString("appearance",it).apply() }, { lookPage = true }, { settings = false })
             } else if (theme == "Classic") {
                 ClassicHome(apps,today,tomorrow,weather,now) { settings = true }
             } else if (theme == "webOS") {
@@ -87,15 +92,16 @@ fun LauncherHome(apps: List<InstalledApp>, today: PrayerDay?, tomorrow: PrayerDa
 @Composable
 private fun ActionTile(modifier: Modifier = Modifier, light: Boolean = false,
                        onClick: () -> Unit, content: @Composable BoxScope.() -> Unit) {
+    val look = LocalLook.current
     val ink = if (light) Color(0xFF202126) else Color.White
     Surface(onClick = onClick, modifier = modifier,
         shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(14.dp)),
         colors = ClickableSurfaceDefaults.colors(
             containerColor = Color.Transparent,
-            focusedContainerColor = Color.Transparent,
+            focusedContainerColor = if(look.focus=="fill") look.palette.accent.copy(alpha=.35f) else Color.Transparent,
             contentColor = ink, focusedContentColor = ink),
-        scale = ClickableSurfaceDefaults.scale(focusedScale = 1.045f),
-        border = ClickableSurfaceDefaults.border(focusedBorder = Border(BorderStroke(2.dp,if(light) Color(0xFF454B63) else Color.White)))
+        scale = ClickableSurfaceDefaults.scale(focusedScale = if(look.focus=="outline") 1f else 1.045f),
+        border = ClickableSurfaceDefaults.border(focusedBorder = Border(BorderStroke(if(look.focus=="bold") 4.dp else 2.dp,if(look.style!="original") look.palette.accent else if(light) Color(0xFF454B63) else Color.White)))
     ) { Box(Modifier.fillMaxSize()) {
         FrostedLayer(light)
         content()
@@ -127,6 +133,8 @@ private fun DiscoverHome(apps: List<InstalledApp>, today: PrayerDay?, tomorrow: 
     val background = if(night) Color(0xC5101725) else Color(0xA8EDF0F3)
     val ink = if(night) Color(0xFFF5F5F7) else Color(0xFF202126)
     val dim = if(night) Color(0xFFB4B6C3) else Color(0xFF626570)
+    val lookColumns = LocalLook.current.columns
+    val dockWidth = if(lookColumns==0) 150.dp else ((LocalConfiguration.current.screenWidthDp - 150 - (lookColumns-1)*16) / lookColumns).dp
     val dockApps = remember(apps) { apps.take(16) }
     var drawer by remember { mutableStateOf(false) }
     val first = remember { FocusRequester() }
@@ -134,7 +142,7 @@ private fun DiscoverHome(apps: List<InstalledApp>, today: PrayerDay?, tomorrow: 
     LaunchedEffect(drawer, apps) { delay(150); runCatching { if(drawer) close.requestFocus() else first.requestFocus() } }
     BackHandler { if(drawer) drawer = false }
     Box(Modifier.fillMaxSize()) {
-    LiteResourceImage(R.drawable.hero,Modifier.fillMaxSize())
+    LookWallpaper(Modifier.fillMaxSize()) { LiteResourceImage(R.drawable.hero,Modifier.fillMaxSize()) }
     Box(Modifier.fillMaxSize().drawBehind { drawRect(background) })
     Column(Modifier.fillMaxSize().padding(horizontal=75.dp, vertical=18.dp), verticalArrangement=Arrangement.spacedBy(12.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment=Alignment.CenterVertically) {
@@ -156,9 +164,9 @@ private fun DiscoverHome(apps: List<InstalledApp>, today: PrayerDay?, tomorrow: 
             ActionTile(Modifier.width(110.dp).height(38.dp).focusRequester(close),!night,{drawer=false}) { Text("رجوع",Modifier.align(Alignment.Center),color=ink) }
             if(apps.isEmpty()) Text("No launchable apps installed",color=dim)
             LazyColumn(Modifier.weight(1f), verticalArrangement=Arrangement.spacedBy(14.dp)) {
-                items(apps.chunked(5),key={it.first().packageName},contentType={"app-row"}) { row ->
+                items(apps.chunked(lookColumns.takeIf { it != 0 } ?: 5),key={it.first().packageName},contentType={"app-row"}) { row ->
                     Row(horizontalArrangement=Arrangement.spacedBy(16.dp)) {
-                        row.forEach { app -> DockApp(app, Modifier.width(150.dp).height(85.dp), !night) { openSafely(context,app.intent) } }
+                        row.forEach { app -> DockApp(app, Modifier.width(dockWidth).height(85.dp), !night) { openSafely(context,app.intent) } }
                     }
                 }
             }
@@ -274,13 +282,14 @@ internal fun PrayerStrip(today: PrayerDay?, tomorrow: PrayerDay?, now: ZonedDate
 }
 
 @Composable
-private fun HomeSettings(theme: String, appearance: String, chooseTheme: (String)->Unit, chooseAppearance:(String)->Unit, close:()->Unit) {
+private fun HomeSettings(theme: String, appearance: String, chooseTheme: (String)->Unit, chooseAppearance:(String)->Unit, openLook:()->Unit, close:()->Unit) {
     val context=LocalContext.current
     val first=remember { FocusRequester() }
     LaunchedEffect(Unit) { delay(100); first.requestFocus() }
     BackHandler(onBack=close)
     Column(Modifier.fillMaxSize().background(Color(0xFF15171E)).padding(40.dp).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(16.dp)) {
         Text("Home settings",color=Color.White,fontSize=30.sp,fontWeight=FontWeight.Bold)
+        ActionTile(Modifier.width(260.dp).height(48.dp).testTag("open-look"),onClick=openLook) { Text("الشكل  /  Look",Modifier.align(Alignment.Center),color=Color.White) }
         Text("Theme",color=Color(0xFFBDC2CE),fontSize=16.sp)
         Row(horizontalArrangement=Arrangement.spacedBy(16.dp)) {
             listOf("webOS","Discover","Classic").forEachIndexed { i, name ->

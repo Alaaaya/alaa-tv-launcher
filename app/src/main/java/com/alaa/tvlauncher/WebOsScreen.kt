@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
@@ -35,11 +36,14 @@ import java.time.format.DateTimeFormatter
 
 @Composable
 internal fun WebTile(modifier: Modifier, color: Color = Color(0xFF292B30), click: () -> Unit, content: @Composable BoxScope.()->Unit) {
+    val look = LocalLook.current
+    val palette = look.palette
+    val tileColor = if (look.style == "original" || color != Color(0xFF292B30)) color else palette.panel
     Surface(onClick=click,modifier=modifier,
-        shape=ClickableSurfaceDefaults.shape(RoundedCornerShape(12.dp)),
-        colors=ClickableSurfaceDefaults.colors(containerColor=color,focusedContainerColor=color,contentColor=Color.White,focusedContentColor=Color.White),
-        scale=ClickableSurfaceDefaults.scale(focusedScale=1.035f),
-        border=ClickableSurfaceDefaults.border(focusedBorder=Border(BorderStroke(2.dp,Color.White)))) {
+        shape=ClickableSurfaceDefaults.shape(RoundedCornerShape(if(look.style == "cinema") 4.dp else if(look.style == "soft") 22.dp else 12.dp)),
+        colors=ClickableSurfaceDefaults.colors(containerColor=tileColor,focusedContainerColor=if(look.focus=="fill") palette.accent.copy(alpha=.55f) else tileColor,contentColor=Color.White,focusedContentColor=Color.White),
+        scale=ClickableSurfaceDefaults.scale(focusedScale=if(look.focus=="outline") 1f else 1.035f),
+        border=ClickableSurfaceDefaults.border(focusedBorder=Border(BorderStroke(if(look.focus=="bold") 4.dp else 2.dp,if(look.style=="original") Color.White else palette.accent)))) {
         Box(Modifier.fillMaxSize(),content=content)
     }
 }
@@ -71,7 +75,7 @@ fun WebOsHome(apps: List<InstalledApp>, today: PrayerDay?, tomorrow: PrayerDay?,
         return
     }
     BackHandler { if(drawer) drawer=false else notice=false }
-    Row(Modifier.fillMaxSize().background(Color.Black)) {
+    Row(Modifier.fillMaxSize().background(LocalLook.current.palette.background)) {
         Column(Modifier.width(62.dp).fillMaxHeight().padding(top=24.dp),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.spacedBy(16.dp)) {
             WebTile(Modifier.size(34.dp).testTag("profile"),click={settings()}) { Text("A",Modifier.align(Alignment.Center),fontWeight=FontWeight.Bold,fontSize=19.sp) }
             WebTile(Modifier.size(34.dp).testTag("notifications"),click={notice=!notice}) { BellIcon(Modifier.align(Alignment.Center).size(21.dp)) }
@@ -89,7 +93,19 @@ fun WebOsHome(apps: List<InstalledApp>, today: PrayerDay?, tomorrow: PrayerDay?,
                     WebTile(Modifier.width(100.dp).height(36.dp).focusRequester(close).testTag("drawer-close"),click={drawer=false}) { Text("رجوع",Modifier.align(Alignment.Center)) }
                 }
                 if(apps.isEmpty()) Text("No launchable apps installed",color=Color.White)
-                LazyColumn(verticalArrangement=Arrangement.spacedBy(10.dp)) {
+                if(LocalLook.current.columns != 0) {
+                    val count = LocalLook.current.columns
+                    LazyVerticalGrid(columns=GridCells.Fixed(count), horizontalArrangement=Arrangement.spacedBy(12.dp), verticalArrangement=Arrangement.spacedBy(12.dp),contentPadding=PaddingValues(5.dp)) {
+                        items(apps,key={it.packageName}) { app ->
+                            WebTile(Modifier.fillMaxWidth().height(76.dp).testTag("drawer-${app.packageName}"),click={openSafely(context,app.intent)}) {
+                                Column(Modifier.align(Alignment.Center),horizontalAlignment=Alignment.CenterHorizontally) {
+                                    if(app.icon!=null) Image(app.icon,app.label,Modifier.size(40.dp))
+                                    Text(app.label,fontSize=11.sp,maxLines=1,overflow=TextOverflow.Ellipsis)
+                                }
+                            }
+                        }
+                    }
+                } else LazyColumn(verticalArrangement=Arrangement.spacedBy(10.dp)) {
                     items(apps,key={it.packageName},contentType={"app-row"}) { app ->
                         WebTile(Modifier.fillMaxWidth().height(48.dp).testTag("drawer-${app.packageName}"),click={openSafely(context,app.intent)}) {
                             Text(app.label,Modifier.align(Alignment.CenterStart).padding(horizontal=18.dp),color=Color.White)
@@ -150,7 +166,7 @@ private fun WebHero(series: List<Series>,today: PrayerDay?,tomorrow: PrayerDay?,
     val page = 0 // Lite: static hero, no background carousel timer.
     val show=series.getOrNull(page)
     Box(modifier.clip(RoundedCornerShape(18.dp)).testTag("webos-hero")) {
-        SeriesArt(show,Modifier.fillMaxSize())
+        LookWallpaper(Modifier.fillMaxSize()) { SeriesArt(show,Modifier.fillMaxSize()) }
         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Color.Transparent,.65f to Color.Transparent,1f to Color(0x65000000))))
         Column(Modifier.align(Alignment.CenterStart).padding(24.dp).fillMaxWidth(.46f),verticalArrangement=Arrangement.spacedBy(7.dp)) {
             Text("Alaa TV",color=Color(0xFFE3DED4),fontSize=12.sp)

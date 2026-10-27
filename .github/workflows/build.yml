@@ -2,7 +2,7 @@ name: Build launcher
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, feat/look-2.0]
 permissions:
   contents: read
 jobs:
@@ -16,12 +16,13 @@ jobs:
           java-version: '17'
       - uses: android-actions/setup-android@v3
       - uses: gradle/actions/setup-gradle@v4
-      - run: ./gradlew :app:assembleDebug :app:testDebugUnitTest --no-daemon
+      - run: ./gradlew :app:assembleDebug :app:assembleRelease :app:testDebugUnitTest --no-daemon
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: alaa-tv-build-and-tests
           path: |
             app/build/outputs/apk/debug/*.apk
+            app/build/outputs/apk/release/*.apk
             app/build/outputs/screenshots/*.png
             app/build/reports/tests/testDebugUnitTest/
