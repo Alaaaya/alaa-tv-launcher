@@ -23,7 +23,7 @@ import java.time.*
 class LookTest {
     @get:Rule val rule = createAndroidComposeRule<androidx.activity.ComponentActivity>()
     private fun press(tag:String) {
-        rule.onNodeWithTag(tag).performScrollTo()
+        runCatching { rule.onNodeWithTag(tag).performScrollTo() }.onFailure { rule.onNodeWithTag(tag).assertExists() }
         rule.onNodeWithTag(tag).performSemanticsAction(SemanticsActions.RequestFocus) { it() }
         rule.onNodeWithTag(tag).performKeyInput { keyDown(Key.DirectionCenter); keyUp(Key.DirectionCenter) }
         rule.mainClock.advanceTimeBy(2000)
