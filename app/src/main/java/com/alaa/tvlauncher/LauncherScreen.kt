@@ -1,5 +1,6 @@
 package com.alaa.tvlauncher
 
+import androidx.compose.ui.graphics.luminance
 import android.content.Intent
 import android.provider.Settings
 import androidx.activity.compose.BackHandler
@@ -75,7 +76,7 @@ private fun Tile(modifier: Modifier = Modifier, onClick: () -> Unit, content: @C
     Surface(
         onClick = onClick, modifier = modifier,
         shape = ClickableSurfaceDefaults.shape(shape = Shape),
-        colors = ClickableSurfaceDefaults.colors(containerColor = Color(0xFF1B1F27), focusedContainerColor = if(look.focus=="fill") look.palette.accent.copy(alpha=.4f) else Color(0xFF242B38), contentColor = Color.White, focusedContentColor = Color.White),
+        colors = ClickableSurfaceDefaults.colors(containerColor = Color(0xFF1B1F27), focusedContainerColor = if(look.focus=="fill") (if(look.palette.accent.luminance()>.8f) Color(0xFF2F6BFF) else look.palette.accent).copy(alpha=.5f) else Color(0xFF242B38), contentColor = Color.White, focusedContentColor = Color.White),
         scale = ClickableSurfaceDefaults.scale(focusedScale = if(look.focus=="outline") 1f else 1.035f),
         border = ClickableSurfaceDefaults.border(focusedBorder = Border(BorderStroke(if(look.focus=="bold") 4.dp else 2.dp, if(look.style=="original") Color.White else look.palette.accent)))
     ) { Box(Modifier.fillMaxSize(), content = content) }

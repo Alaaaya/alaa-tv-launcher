@@ -1,5 +1,6 @@
 package com.alaa.tvlauncher
 
+import androidx.compose.ui.graphics.luminance
 import android.content.Intent
 import android.provider.Settings
 import androidx.activity.compose.BackHandler
@@ -41,7 +42,7 @@ internal fun WebTile(modifier: Modifier, color: Color = Color(0xFF292B30), click
     val tileColor = if (look.style == "original" || color != Color(0xFF292B30)) color else palette.panel
     Surface(onClick=click,modifier=modifier,
         shape=ClickableSurfaceDefaults.shape(RoundedCornerShape(if(look.style == "cinema") 4.dp else if(look.style == "soft") 22.dp else 12.dp)),
-        colors=ClickableSurfaceDefaults.colors(containerColor=tileColor,focusedContainerColor=if(look.focus=="fill") palette.accent.copy(alpha=.55f) else tileColor,contentColor=Color.White,focusedContentColor=Color.White),
+        colors=ClickableSurfaceDefaults.colors(containerColor=tileColor,focusedContainerColor=if(look.focus=="fill") (if(palette.accent.luminance()>.8f) Color(0xFF2F6BFF) else palette.accent).copy(alpha=.55f) else tileColor,contentColor=Color.White,focusedContentColor=Color.White),
         scale=ClickableSurfaceDefaults.scale(focusedScale=if(look.focus=="outline") 1f else 1.035f),
         border=ClickableSurfaceDefaults.border(focusedBorder=Border(BorderStroke(if(look.focus=="bold") 4.dp else 2.dp,if(look.style=="original") Color.White else palette.accent)))) {
         Box(Modifier.fillMaxSize(),content=content)

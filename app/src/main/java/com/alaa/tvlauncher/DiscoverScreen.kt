@@ -1,5 +1,6 @@
 package com.alaa.tvlauncher
 
+import androidx.compose.ui.graphics.luminance
 import android.os.Build
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
@@ -26,6 +27,7 @@ import androidx.compose.ui.focus.*
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
@@ -98,7 +100,7 @@ private fun ActionTile(modifier: Modifier = Modifier, light: Boolean = false,
         shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(14.dp)),
         colors = ClickableSurfaceDefaults.colors(
             containerColor = Color.Transparent,
-            focusedContainerColor = if(look.focus=="fill") look.palette.accent.copy(alpha=.35f) else Color.Transparent,
+            focusedContainerColor = if(look.focus=="fill") (if(look.palette.accent.luminance()>.8f) Color(0xFF2F6BFF) else look.palette.accent).copy(alpha=.45f) else Color.Transparent,
             contentColor = ink, focusedContentColor = ink),
         scale = ClickableSurfaceDefaults.scale(focusedScale = if(look.focus=="outline") 1f else 1.045f),
         border = ClickableSurfaceDefaults.border(focusedBorder = Border(BorderStroke(if(look.focus=="bold") 4.dp else 2.dp,if(look.style!="original") look.palette.accent else if(light) Color(0xFF454B63) else Color.White)))
